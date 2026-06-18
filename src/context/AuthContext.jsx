@@ -40,6 +40,14 @@ export function AuthProvider({ children }) {
       password,
       options: { data: { name } }
     })
+    // Si el registro fue exitoso y hay sesión, creamos el perfil manualmente
+    // (por si el trigger de Supabase no funciona con la nueva versión)
+    if (!error && data?.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        name: name,
+      }, { onConflict: 'id' })
+    }
     return { data, error }
   }
 

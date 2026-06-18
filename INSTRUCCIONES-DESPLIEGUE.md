@@ -59,6 +59,18 @@ Seguí estos pasos en orden. No necesitás saber programar para hacerlo.
      git push -u origin main
      ```
    - Reemplazá `TU_USUARIO` con tu usuario de GitHub
+   - Cuando pida **usuario**: escribí tu usuario de GitHub (el que aparece en tu perfil)
+   - Cuando pida **contraseña**: **no uses tu contraseña de Google**. GitHub ya no acepta contraseñas normales. Necesitás un **Token de acceso personal**. Seguí estos pasos para crearlo:
+     1. En GitHub, hacé clic en tu foto de perfil → **Settings**
+     2. En el menú izquierdo, bajá hasta **Developer settings** (al fondo)
+     3. Hacé clic en **Personal access tokens → Tokens (classic)**
+     4. Hacé clic en **"Generate new token (classic)"**
+     5. En **Note** escribí: `health-tracker`
+     6. En **Expiration** elegí `90 days` o `No expiration`
+     7. En los permisos, tildá **`repo`** (el primero, que selecciona todos los subopciones de repo)
+     8. Bajá y hacé clic en **"Generate token"**
+     9. **Copiá el token que aparece** (empieza con `ghp_...`) — solo se muestra una vez
+     10. Volvé a la Terminal y pegá ese token cuando te pida la contraseña
 
 ---
 
@@ -69,7 +81,7 @@ Seguí estos pasos en orden. No necesitás saber programar para hacerlo.
 3. Importá el repositorio `health-tracker` que creaste
 4. Antes de hacer Deploy, buscá la sección **"Environment Variables"** y agregá:
    - **Name**: `VITE_SUPABASE_URL` → **Value**: la URL de Supabase del paso 3
-   - **Name**: `VITE_SUPABASE_ANON_KEY` → **Value**: la anon key del paso 3
+   - **Name**: `VITE_SUPABASE_ANON_KEY` → **Value**: la **publishable key** del paso 3 (la que empieza con `sb_publishable_...`)
 5. Hacé clic en **"Deploy"**
 6. Esperá ~2 minutos. Al finalizar, Vercel te da una URL como `health-tracker-xyz.vercel.app`
 

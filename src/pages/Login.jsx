@@ -22,13 +22,14 @@ export default function Login() {
     }
 
     if (result.error) {
-      const msg = result.error.message
-      if (msg.includes('Invalid login')) setError('Email o contraseña incorrectos')
-      else if (msg.includes('already registered')) setError('Este email ya está registrado')
-      else if (msg.includes('Password should be')) setError('La contraseña debe tener al menos 6 caracteres')
-      else setError(msg)
+      const msg = result.error?.message || result.error?.msg || JSON.stringify(result.error)
+      if (msg.includes('Invalid login') || msg.includes('invalid_credentials')) setError('Email o contraseña incorrectos')
+      else if (msg.includes('already registered') || msg.includes('already been registered')) setError('Este email ya está registrado')
+      else if (msg.includes('Password should be') || msg.includes('weak_password')) setError('La contraseña debe tener al menos 6 caracteres')
+      else if (msg.includes('Email not confirmed')) setError('Revisá tu email y confirmá tu cuenta antes de ingresar.')
+      else setError(msg || 'Ocurrió un error. Revisá los datos e intentá de nuevo.')
     } else if (mode === 'register' && !result.data?.session) {
-      setError('Revisá tu email para confirmar tu cuenta antes de ingresar.')
+      setError('✅ Cuenta creada. Revisá tu email para confirmarla antes de ingresar.')
     }
     setLoading(false)
   }
