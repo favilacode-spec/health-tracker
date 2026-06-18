@@ -32,6 +32,11 @@ export default function Ejercicio() {
   const [msg, setMsg] = useState({ type: '', text: '' })
   const [tab, setTab] = useState('registrar')
 
+  // Apple Health import state
+  const [importWorkouts, setImportWorkouts] = useState([])
+  const [importStatus, setImportStatus] = useState('idle') // idle | parsed | importing | done
+  const [importMsg, setImportMsg] = useState('')
+
   const [form, setForm] = useState({
     exercise_type: 'caminata',
     duration_min: '',
@@ -93,6 +98,118 @@ export default function Ejercicio() {
     loadExercises(); loadWeekly()
   }
 
+  // Apple Health workout type → our exercise types
+  const APPLE_TYPE_MAP = {
+    HKWorkoutActivityTypeRunning: 'trote',
+    HKWorkoutActivityTypeWalking: 'caminata',
+    HKWorkoutActivityTypeCycling: 'bicicleta',
+    HKWorkoutActivityTypeSwimming: 'natacion',
+    HKWorkoutActivityTypeHighIntensityIntervalTraining: 'hiit',
+    HKWorkoutActivityTypeStrengthTraining: 'pesas',
+    HKWorkoutActivityTypeFunctionalStrengthTraining: 'pesas',
+    HKWorkoutActivityTypeTraditionalStrengthTraining: 'pesas',
+    HKWorkoutActivityTypeYoga: 'yoga',
+    HKWorkoutActivityTypePilates: 'yoga',
+    HKWorkoutActivityTypeElliptical: 'eliptica',
+    HKWorkoutActivityTypeCrossTraining: 'funcional',
+    HKWorkoutActivityTypeMixedCardio: 'funcional',
+    HKWorkoutActivityTypeCoreTraining: 'funcional',
+    HKWorkoutActivityTypeFlexibility: 'yoga',
+    HKWorkoutActivityTypeCooldown: 'caminata',
+    HKWorkoutActivityTypeHiking: 'caminata',
+  }
+
+  function appleTypeToIntensity(appleType) {
+    if (['HKWorkoutActivityTypeHighIntensityIntervalTraining'].includes(appleType)) return 'alta'
+    if (['HKWorkoutActivityTypeYoga', 'HKWorkoutActivityTypePilates', 'HKWorkoutActivityTypeFlexibility', 'HKWorkoutActivityTypeCooldown'].includes(appleType)) return 'baja'
+    return 'media'
+  }
+
+  function parseAppleHealthXML(file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(e.target.result, 'text/xml')
+        const workouts = Array.from(doc.querySelectorAll('Workout'))
+
+        if (workouts.length === 0) {
+          setImportMsg('❌ No se encontraron entrenamientos en el archivo. Asegurate de subir el archivo export.xml de Apple Health.')
+          return
+        }
+
+        const parsed = workouts.map(w => {
+          const appleType = w.getAttribute('workoutActivityType') || ''
+          const durationRaw = parseFloat(w.getAttribute('duration') || '0')
+          const durationUnit = w.getAttribute('durationUnit') || 'min'
+          const durationMin = durationUnit === 'min' ? Math.round(durationRaw) : Math.round(durationRaw / 60)
+
+          const distRaw = parseFloat(w.getAttribute('totalDistance') || '0')
+          const distUnit = w.getAttribute('totalDistanceUnit') || 'km'
+          let distKm = null
+          if (distRaw > 0) {
+            if (distUnit === 'km') distKm = Math.round(distRaw * 100) / 100
+            else if (distUnit === 'mi') distKm = Math.round(distRaw * 1.60934 * 100) / 100
+            else if (distUnit === 'm') distKm = Math.round(distRaw / 10) / 100
+          }
+
+          const calRaw = parseFloat(w.getAttribute('totalEnergyBurned') || '0')
+          const calUnit = w.getAttribute('totalEnergyBurnedUnit') || 'Cal'
+          let cal = null
+          if (calRaw > 0) {
+            cal = calUnit === 'kJ' ? Math.round(calRaw / 4.184) : Math.round(calRaw)
+          }
+
+          // Parse date from "2026-06-15 10:00:00 -0300"
+          const startDateRaw = w.getAttribute('startDate') || ''
+          const date = startDateRaw.split(' ')[0] || format(new Date(), 'yyyy-MM-dd')
+
+          const exerciseType = APPLE_TYPE_MAP[appleType] || 'otro'
+          const intensity = appleTypeToIntensity(appleType)
+          const source = w.getAttribute('sourceName') || 'Apple Health'
+
+          return { date, exercise_type: exerciseType, duration_min: durationMin, intensity, calories_burned: cal, distance_km: distKm, notes: `Importado de ${source}`, _appleType: appleType }
+        }).filter(w => w.duration_min > 0)
+
+        setImportWorkouts(parsed)
+        setImportStatus('parsed')
+        setImportMsg(`✅ Se encontraron ${parsed.length} entrenamientos listos para importar.`)
+      } catch {
+        setImportMsg('❌ Error al leer el archivo. Verificá que sea el export.xml de Apple Health.')
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  async function importToSupabase() {
+    setImportStatus('importing')
+    const rows = importWorkouts.map(w => ({
+      user_id: user.id,
+      date: w.date,
+      exercise_type: w.exercise_type,
+      duration_min: w.duration_min,
+      intensity: w.intensity,
+      calories_burned: w.calories_burned,
+      distance_km: w.distance_km,
+      notes: w.notes,
+    }))
+
+    // Insert in batches of 50
+    let errors = 0
+    for (let i = 0; i < rows.length; i += 50) {
+      const { error } = await supabase.from('exercise_logs').insert(rows.slice(i, i + 50))
+      if (error) errors++
+    }
+
+    setImportStatus('done')
+    if (errors === 0) {
+      setImportMsg(`🎉 ¡${importWorkouts.length} entrenamientos importados exitosamente!`)
+    } else {
+      setImportMsg(`⚠️ Se importaron la mayoría pero hubo ${errors} errores en lotes.`)
+    }
+    loadExercises(); loadWeekly()
+  }
+
   async function deleteExercise(id) {
     await supabase.from('exercise_logs').delete().eq('id', id)
     loadExercises(); loadWeekly()
@@ -146,7 +263,7 @@ export default function Ejercicio() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', marginBottom: 24 }}>
-        {[['registrar', '➕ Registrar'], ['historial', '📋 Historial'], ['semana', '📊 Semana']].map(([key, label]) => (
+        {[['registrar', '➕ Registrar'], ['historial', '📋 Historial'], ['semana', '📊 Semana'], ['apple', '🍎 Apple Health']].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             style={{
               padding: '10px 20px', fontSize: 'var(--text-sm)', fontWeight: 500,
@@ -299,6 +416,119 @@ export default function Ejercicio() {
         <div className="card">
           <div className="card-title">📋 Últimos ejercicios</div>
           <HistorialEjercicio userId={user.id} />
+        </div>
+      )}
+
+      {/* TAB: Apple Health */}
+      {tab === 'apple' && (
+        <div>
+          {/* Instrucciones */}
+          <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #555' }}>
+            <div className="card-title">🍎 Cómo exportar desde Apple Health</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, marginTop: 8 }}>
+              {[
+                { n: '1', text: 'Abrí la app Health en tu iPhone' },
+                { n: '2', text: 'Tocá tu foto de perfil (arriba a la derecha)' },
+                { n: '3', text: 'Bajá y tocá "Exportar todos los datos de salud"' },
+                { n: '4', text: 'Compartí el .zip a tu computadora' },
+                { n: '5', text: 'Descomprimí el .zip y buscá el archivo export.xml' },
+                { n: '6', text: 'Subí ese archivo acá abajo 👇' },
+              ].map(s => (
+                <div key={s.n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 10, background: 'var(--gray-50)', borderRadius: 'var(--radius-sm)' }}>
+                  <span style={{ background: 'var(--primary)', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.n}</span>
+                  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-700)', lineHeight: 1.4 }}>{s.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Zona de carga */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="card-title">📁 Subir archivo export.xml</div>
+            <div style={{
+              border: '2px dashed var(--gray-300)', borderRadius: 'var(--radius)',
+              padding: '32px 20px', textAlign: 'center', marginBottom: 16,
+              background: 'var(--gray-50)'
+            }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📱</div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Seleccioná el archivo export.xml</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginBottom: 16 }}>El archivo puede pesar varios MB, es normal</div>
+              <label style={{ cursor: 'pointer' }}>
+                <span className="btn-primary" style={{ display: 'inline-block', padding: '10px 24px' }}>
+                  Elegir archivo XML
+                </span>
+                <input type="file" accept=".xml" style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setImportStatus('idle')
+                      setImportWorkouts([])
+                      setImportMsg('⏳ Procesando archivo...')
+                      parseAppleHealthXML(file)
+                    }
+                  }} />
+              </label>
+            </div>
+
+            {importMsg && (
+              <div className={importMsg.startsWith('❌') ? 'form-error' : 'form-success'} style={{ marginBottom: 12 }}>
+                {importMsg}
+              </div>
+            )}
+
+            {importStatus === 'parsed' && importWorkouts.length > 0 && (
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 12 }}>
+                  Vista previa — {importWorkouts.length} entrenamientos encontrados:
+                </div>
+                <div style={{ maxHeight: 320, overflowY: 'auto', marginBottom: 16 }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr><th>Fecha</th><th>Ejercicio</th><th>Duración</th><th>Distancia</th><th>Calorías</th></tr>
+                    </thead>
+                    <tbody>
+                      {importWorkouts.slice(0, 100).map((w, i) => {
+                        const type = EXERCISE_TYPES.find(t => t.id === w.exercise_type)
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontSize: 'var(--text-xs)' }}>{w.date}</td>
+                            <td>{type?.icon} {type?.label}</td>
+                            <td>{w.duration_min} min</td>
+                            <td>{w.distance_km ? `${w.distance_km} km` : '—'}</td>
+                            <td>{w.calories_burned ? `🔥 ${w.calories_burned}` : '—'}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  {importWorkouts.length > 100 && (
+                    <div style={{ textAlign: 'center', padding: 8, fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
+                      ... y {importWorkouts.length - 100} más
+                    </div>
+                  )}
+                </div>
+                <button className="btn-primary" onClick={importToSupabase}>
+                  ✅ Importar {importWorkouts.length} entrenamientos
+                </button>
+                <span style={{ marginLeft: 12, fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
+                  Se agregarán a tu historial de ejercicios
+                </span>
+              </div>
+            )}
+
+            {importStatus === 'importing' && (
+              <div style={{ textAlign: 'center', padding: 20 }}>
+                <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                <div>Importando entrenamientos...</div>
+              </div>
+            )}
+
+            {importStatus === 'done' && (
+              <button className="btn-secondary" onClick={() => { setImportStatus('idle'); setImportWorkouts([]); setImportMsg('') }}>
+                Importar otro archivo
+              </button>
+            )}
+          </div>
         </div>
       )}
 
