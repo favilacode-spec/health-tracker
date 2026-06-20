@@ -10,6 +10,7 @@ import Nutricion from './pages/Nutricion'
 import Ejercicio from './pages/Ejercicio'
 import Alimentacion from './pages/Alimentacion'
 import Perfil from './pages/Perfil'
+import NutricionIA from './pages/NutricionIA'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -32,6 +33,7 @@ function AppRoutes() {
       <Route path="/nutricion" element={<ProtectedRoute><Nutricion /></ProtectedRoute>} />
       <Route path="/ejercicio" element={<ProtectedRoute><Ejercicio /></ProtectedRoute>} />
       <Route path="/alimentacion" element={<ProtectedRoute><Alimentacion /></ProtectedRoute>} />
+      <Route path="/nutricion-ia" element={<ProtectedRoute><NutricionIA /></ProtectedRoute>} />
       <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
