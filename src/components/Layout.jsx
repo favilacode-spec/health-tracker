@@ -10,6 +10,7 @@ const navItems = [
   { to: '/nutricion',   icon: '🥗', label: 'Nutrición' },
   { to: '/ejercicio',   icon: '🏃', label: 'Ejercicio' },
   { to: '/alimentacion',icon: '🛒', label: 'Alimentación' },
+  { to: '/nutricion-ia',icon: '✨', label: 'IA Nutricional' },
 ]
 
 export default function Layout({ children }) {
