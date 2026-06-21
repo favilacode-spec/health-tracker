@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-// âââ Apple Health XML parser ââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Apple Health XML parser ──────────────────────────────────────────────────
 function parseAppleHealthSleep(xmlText) {
   const parser = new DOMParser()
   const doc = parser.parseFromString(xmlText, 'text/xml')
@@ -24,7 +24,7 @@ function parseAppleHealthSleep(xmlText) {
     const durationH = (end - start) / 3600000
     if (durationH <= 0 || durationH > 16) return
 
-    // Assign to "morning date" â if wakeup is before 14:00, use that date; else next day
+    // Assign to "morning date" – if wakeup is before 14:00, use that date; else next day
     const wakeDate = new Date(end)
     if (wakeDate.getHours() >= 14) wakeDate.setDate(wakeDate.getDate() + 1)
     const key = format(wakeDate, 'yyyy-MM-dd')
@@ -64,9 +64,9 @@ function parseAppleHealthSleep(xmlText) {
     .sort((a, b) => b.fecha.localeCompare(a.fecha))
 }
 
-// âââ Helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function hhmm(hours) {
-  if (!hours || isNaN(hours)) return 'â'
+  if (!hours || isNaN(hours)) return '—'
   const h = Math.floor(hours)
   const m = Math.round((hours - h) * 60)
   return `${h}h ${m}m`
@@ -94,7 +94,7 @@ const EMPTY_FORM = {
   calidad: '', notas: '',
 }
 
-// âââ Component ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function Sueno() {
   const { user } = useAuth()
   const [tab, setTab]               = useState('registrar')
@@ -124,19 +124,19 @@ export default function Sueno() {
 
   useEffect(() => { loadRecords() }, [user])
 
-  // âââ XML Upload âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── XML Upload ─────────────────────────────────────────────────────────────
   async function handleXmlUpload(file) {
     if (!file) return
     setXmlState('parsing')
     setXmlMsg('Leyendo export.xml de Apple Health...')
     try {
       const text = await file.text()
-      setXmlMsg('Analizando fases de sueÃ±o...')
+      setXmlMsg('Analizando fases de sueño...')
       const parsed = parseAppleHealthSleep(text)
 
       if (parsed.length === 0) {
         setXmlState('error')
-        setXmlMsg('No se encontraron datos de sueÃ±o en el archivo.')
+        setXmlMsg('No se encontraron datos de sueño en el archivo.')
         return
       }
 
@@ -156,15 +156,15 @@ export default function Sueno() {
       }
 
       setXmlState('done')
-      setXmlMsg(`â ${parsed.length} noches importadas correctamente.`)
+      setXmlMsg(`✅ ${parsed.length} noches importadas correctamente.`)
       loadRecords()
     } catch (e) {
       setXmlState('error')
-      setXmlMsg('â ' + e.message)
+      setXmlMsg('❌ ' + e.message)
     }
   }
 
-  // âââ Manual save ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── Manual save ────────────────────────────────────────────────────────────
   async function saveRecord(e) {
     e.preventDefault()
     const stages = ['duracion_rem','duracion_profundo','duracion_ligero']
@@ -193,8 +193,8 @@ export default function Sueno() {
     }
 
     const { error } = await supabase.from('sleep_records').insert(payload)
-    if (error) { showMsg('error', 'â ' + error.message); return }
-    showMsg('success', 'â Noche guardada')
+    if (error) { showMsg('error', '❌ ' + error.message); return }
+    showMsg('success', '✅ Noche guardada')
     setForm(EMPTY_FORM)
     loadRecords()
   }
@@ -204,7 +204,7 @@ export default function Sueno() {
     loadRecords()
   }
 
-  // âââ Stats âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── Stats ───────────────────────────────────────────────────────────────────
   const last  = records[0]
   const last30 = records.slice(0, 30)
   const avg = key => last30.length > 0
@@ -222,18 +222,18 @@ export default function Sueno() {
   return (
     <div>
       <div className="page-header">
-        <h1>ð SueÃ±o</h1>
-        <p>Importa Apple Health o registra manualmente â tirzepatida mejora el sueÃ±o al reducir apnea y grasa visceral</p>
+        <h1>🌙 Sueño</h1>
+        <p>Importa Apple Health o registra manualmente — tirzepatida mejora el sueño al reducir apnea y grasa visceral</p>
       </div>
 
       {/* KPIs */}
       {last && (
         <div className="stats-grid" style={{ marginBottom: 24 }}>
           {[
-            { label: 'ð Ãltima noche', val: hhmm(last.duracion_total), sub: format(parseISO(last.fecha), 'd MMM', { locale: es }) },
-            { label: 'ð Promedio 30d',  val: hhmm(avg('duracion_total')),    sub: 'total sueÃ±o' },
-            { label: 'ð§  REM prom.',     val: hhmm(avg('duracion_rem')),       sub: '~20% ideal' },
-            { label: 'ðª Profundo prom.',val: hhmm(avg('duracion_profundo')), sub: '~15% ideal' },
+            { label: '🌙 Última noche', val: hhmm(last.duracion_total), sub: format(parseISO(last.fecha), 'd MMM', { locale: es }) },
+            { label: '📅 Promedio 30d',  val: hhmm(avg('duracion_total')),    sub: 'total sueño' },
+            { label: '🧠 REM prom.',     val: hhmm(avg('duracion_rem')),       sub: '~20% ideal' },
+            { label: '💪 Profundo prom.',val: hhmm(avg('duracion_profundo')), sub: '~15% ideal' },
           ].map(s => (
             <div className="stat-card" key={s.label}>
               <div className="stat-card-label">{s.label}</div>
@@ -246,7 +246,7 @@ export default function Sueno() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', marginBottom: 24 }}>
-        {[['registrar','â¬ï¸ Registrar'],['historial','ð Historial'],['graficos','ð GrÃ¡ficos']].map(([k, l]) => (
+        {[['registrar','⬆️ Registrar'],['historial','📋 Historial'],['graficos','📈 Gráficos']].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             padding: '10px 20px', fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: -1,
             borderBottom: tab === k ? '2px solid var(--primary)' : '2px solid transparent',
@@ -259,17 +259,17 @@ export default function Sueno() {
         <div className={msg.type === 'success' ? 'form-success' : 'form-error'} style={{ marginBottom: 16 }}>{msg.text}</div>
       )}
 
-      {/* âââ REGISTRAR âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+      {/* ═══ REGISTRAR ═══════════════════════════════════════════════════════════ */}
       {tab === 'registrar' && (
         <div>
           {/* Apple Health Import Card */}
           <div className="card" style={{ marginBottom: 24, border: '2px dashed var(--primary)', background: 'var(--primary-light, #eff6ff)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <span style={{ fontSize: 32 }}>ð</span>
+              <span style={{ fontSize: 32 }}>🍎</span>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--primary)' }}>Importar Apple Health</div>
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                  iPhone â Health â tu foto â Export All Health Data â abre el ZIP â sube export.xml
+                  iPhone → Health → tu foto → Export All Health Data → abre el ZIP → sube export.xml
                 </div>
               </div>
             </div>
@@ -285,27 +285,27 @@ export default function Sueno() {
               }}>
               {xmlState === 'idle' && (
                 <>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>ð</div>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>📂</div>
                   <div style={{ fontWeight: 600, color: 'var(--gray-700)', marginBottom: 4 }}>Arrastra export.xml o haz click para seleccionar</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>Solo archivos .xml â puede tardar varios segundos si es grande</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>Solo archivos .xml — puede tardar varios segundos si es grande</div>
                 </>
               )}
               {(xmlState === 'parsing' || xmlState === 'saving') && (
                 <div style={{ color: 'var(--primary)' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>â³</div>
+                  <div style={{ fontSize: 36, marginBottom: 8 }}>⏳</div>
                   <div style={{ fontWeight: 600 }}>{xmlMsg}</div>
                 </div>
               )}
               {xmlState === 'done' && (
                 <div style={{ color: 'var(--secondary)', fontWeight: 600 }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>â</div>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
                   {xmlMsg}
                   <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>Haz click para importar otro archivo</div>
                 </div>
               )}
               {xmlState === 'error' && (
                 <div style={{ color: 'var(--danger)', fontWeight: 600 }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>â</div>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>❌</div>
                   {xmlMsg}
                   <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>Haz click para intentar de nuevo</div>
                 </div>
@@ -315,7 +315,7 @@ export default function Sueno() {
 
           {/* Manual Entry */}
           <div className="card">
-            <div className="card-title">ð Registro manual</div>
+            <div className="card-title">📝 Registro manual</div>
             <form onSubmit={saveRecord}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
                 <div className="form-group">
@@ -323,11 +323,11 @@ export default function Sueno() {
                   <input type="date" value={form.fecha} onChange={e => setF('fecha', e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label>Me dormÃ­ a</label>
+                  <label>Me dormí a</label>
                   <input type="time" value={form.hora_inicio} onChange={e => setF('hora_inicio', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label>Me despertÃ© a</label>
+                  <label>Me desperté a</label>
                   <input type="time" value={form.hora_fin} onChange={e => setF('hora_fin', e.target.value)} />
                 </div>
                 <div className="form-group">
@@ -338,15 +338,15 @@ export default function Sueno() {
               </div>
 
               <div style={{ fontWeight: 600, color: 'var(--gray-600)', fontSize: 'var(--text-sm)', marginBottom: 12 }}>
-                â± Fases de sueÃ±o en horas (opcional â Apple Watch las detecta automÃ¡ticamente)
+                ⏱ Fases de sueño en horas (opcional — Apple Watch las detecta automáticamente)
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
                 {[
-                  { k: 'duracion_rem',        l: 'ð§  REM' },
-                  { k: 'duracion_profundo',    l: 'ðª Profundo' },
-                  { k: 'duracion_ligero',      l: 'ð¤ Ligero' },
-                  { k: 'duracion_en_cama',     l: 'ð En cama' },
-                  { k: 'duracion_despierto',   l: 'ð Despierto' },
+                  { k: 'duracion_rem',        l: '🧠 REM' },
+                  { k: 'duracion_profundo',    l: '💪 Profundo' },
+                  { k: 'duracion_ligero',      l: '💤 Ligero' },
+                  { k: 'duracion_en_cama',     l: '🛏 En cama' },
+                  { k: 'duracion_despierto',   l: '👁 Despierto' },
                 ].map(f => (
                   <div className="form-group" key={f.k}>
                     <label style={{ fontSize: 11 }}>{f.l}</label>
@@ -359,11 +359,11 @@ export default function Sueno() {
               <div className="form-group" style={{ marginBottom: 20 }}>
                 <label>Notas</label>
                 <textarea value={form.notas} onChange={e => setF('notas', e.target.value)}
-                  placeholder="Â¿SueÃ±o reparador? Â¿Veces que te despertaste?..." />
+                  placeholder="¿Sueño reparador? ¿Veces que te despertaste?..." />
               </div>
 
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <button type="submit" className="btn-primary">ð¾ Guardar noche</button>
+                <button type="submit" className="btn-primary">💾 Guardar noche</button>
                 <button type="button" onClick={() => setForm(EMPTY_FORM)}
                   style={{ color: 'var(--gray-500)', fontSize: 'var(--text-sm)' }}>Limpiar</button>
               </div>
@@ -372,13 +372,13 @@ export default function Sueno() {
         </div>
       )}
 
-      {/* âââ HISTORIAL âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+      {/* ═══ HISTORIAL ═══════════════════════════════════════════════════════════ */}
       {tab === 'historial' && (
         records.length === 0
-          ? <div className="empty-state card"><div className="empty-state-icon">ð</div><p>No hay noches registradas aÃºn. Importa tu Apple Health o agrega una manualmente.</p></div>
+          ? <div className="empty-state card"><div className="empty-state-icon">🌙</div><p>No hay noches registradas aún. Importa tu Apple Health o agrega una manualmente.</p></div>
           : (
             <div className="card">
-              <div className="card-title">ð Historial ({records.length} noches)</div>
+              <div className="card-title">📋 Historial ({records.length} noches)</div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="data-table">
                   <thead>
@@ -399,15 +399,15 @@ export default function Sueno() {
                         <td style={{ color: '#0ea5e9' }}>{hhmm(r.duracion_profundo)}</td>
                         <td style={{ color: '#8b5cf6' }}>{hhmm(r.duracion_rem)}</td>
                         <td>{hhmm(r.duracion_ligero)}</td>
-                        <td>{r.calidad ? `${r.calidad}/10` : 'â'}</td>
+                        <td>{r.calidad ? `${r.calidad}/10` : '—'}</td>
                         <td>
                           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12,
                             background: r.fuente === 'apple_health' ? '#dcfce7' : '#f1f5f9',
                             color:      r.fuente === 'apple_health' ? '#166534' : '#475569' }}>
-                            {r.fuente === 'apple_health' ? 'ð Apple' : 'âï¸ Manual'}
+                            {r.fuente === 'apple_health' ? '🍎 Apple' : '✏️ Manual'}
                           </span>
                         </td>
-                        <td><button className="btn-icon" onClick={() => deleteRecord(r.id)}>ðï¸</button></td>
+                        <td><button className="btn-icon" onClick={() => deleteRecord(r.id)}>🗑️</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -417,11 +417,11 @@ export default function Sueno() {
           )
       )}
 
-      {/* âââ GRÃFICOS ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+      {/* ═══ GRÁFICOS ════════════════════════════════════════════════════════════ */}
       {tab === 'graficos' && (
         <div className="section-grid">
           <div className="card">
-            <div className="card-title">ð Ãltimas 14 noches â fases apiladas</div>
+            <div className="card-title">📊 Últimas 14 noches — fases apiladas</div>
             {chartData.length < 2
               ? <div className="empty-state"><p>Necesitas al menos 2 registros.</p></div>
               : (
@@ -441,24 +441,24 @@ export default function Sueno() {
           </div>
 
           <div className="card">
-            <div className="card-title">ð Promedio Ãºltimas 30 noches</div>
+            <div className="card-title">📋 Promedio últimas 30 noches</div>
             {records.length === 0
-              ? <div className="empty-state"><p>Sin datos aÃºn.</p></div>
+              ? <div className="empty-state"><p>Sin datos aún.</p></div>
               : (
                 <>
                   <div style={{ marginBottom: 24 }}>
                     <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: 'var(--primary)', marginBottom: 4 }}>
                       {hhmm(avg('duracion_total'))}
                     </div>
-                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-500)' }}>promedio de sueÃ±o total Â· OMS recomienda 7-9h</div>
+                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-500)' }}>promedio de sueño total · OMS recomienda 7-9h</div>
                   </div>
-                  <SleepBar value={avg('duracion_profundo')} max={2}   color="#0ea5e9" label="ðª Profundo (ideal â¥1.5h)" />
-                  <SleepBar value={avg('duracion_rem')}      max={2}   color="#8b5cf6" label="ð§  REM (ideal â¥1.5h)" />
-                  <SleepBar value={avg('duracion_ligero')}   max={4.5} color="#6366f1" label="ð¤ Ligero" />
+                  <SleepBar value={avg('duracion_profundo')} max={2}   color="#0ea5e9" label="💪 Profundo (ideal ≥1.5h)" />
+                  <SleepBar value={avg('duracion_rem')}      max={2}   color="#8b5cf6" label="🧠 REM (ideal ≥1.5h)" />
+                  <SleepBar value={avg('duracion_ligero')}   max={4.5} color="#6366f1" label="💤 Ligero" />
 
                   <div style={{ marginTop: 20, padding: 12, background: '#fff7ed', borderRadius: 8, fontSize: 'var(--text-xs)', color: '#92400e', lineHeight: 1.7 }}>
-                    <strong>â¡ Tirzepatida y sueÃ±o:</strong> Reducir grasa visceral mejora la apnea del sueÃ±o, aumenta
-                    el sueÃ±o profundo (que libera hormona de crecimiento para preservar mÃºsculo) y mejora
+                    <strong>⚡ Tirzepatida y sueño:</strong> Reducir grasa visceral mejora la apnea del sueño, aumenta
+                    el sueño profundo (que libera hormona de crecimiento para preservar músculo) y mejora
                     la sensibilidad a la insulina al dormir. Intenta acostarte a la misma hora cada noche.
                   </div>
                 </>
