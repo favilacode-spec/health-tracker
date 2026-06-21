@@ -3,14 +3,19 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const navItems = [
-  { to: '/',            icon: '📊', label: 'Dashboard' },
-  { to: '/peso',        icon: '⚖️',  label: 'Peso y Medidas' },
-  { to: '/biopedancia', icon: '🔬', label: 'Biopedancia' },
-  { to: '/tirzepatida', icon: '💉', label: 'Tirzepatida' },
-  { to: '/nutricion',   icon: '🥗', label: 'Nutrición' },
-  { to: '/ejercicio',   icon: '🏃', label: 'Ejercicio' },
-  { to: '/alimentacion',icon: '🛒', label: 'Alimentación' },
-  { to: '/nutricion-ia',icon: '✨', label: 'IA Nutricional' },
+  { to: '/',             icon: 'ð', label: 'Dashboard' },
+  { to: '/peso',         icon: 'âï¸',  label: 'Peso y Medidas' },
+  { to: '/biopedancia',  icon: 'ð¬', label: 'Biopedancia' },
+  { to: '/tirzepatida',  icon: 'ð', label: 'Tirzepatida' },
+  { to: '/nutricion',    icon: 'ð¥', label: 'NutriciÃ³n' },
+  { to: '/ejercicio',    icon: 'ð', label: 'Ejercicio' },
+  { to: '/alimentacion', icon: 'ð', label: 'AlimentaciÃ³n' },
+  { to: '/sueno',        icon: 'ð', label: 'SueÃ±o' },
+]
+
+const toolItems = [
+  { to: '/exportar', icon: 'ð¥', label: 'Exportar' },
+  { to: '/reporte',  icon: 'ð', label: 'Reporte IA' },
 ]
 
 export default function Layout({ children }) {
@@ -25,15 +30,13 @@ export default function Layout({ children }) {
 
   return (
     <div className="layout">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">💉</div>
+          <div className="sidebar-logo">ð</div>
           <div className="sidebar-title">
             <span className="sidebar-app-name">Health Tracker</span>
             <span className="sidebar-user-name">{profile?.name || 'Usuario'}</span>
@@ -53,6 +56,23 @@ export default function Layout({ children }) {
               <span>{item.label}</span>
             </NavLink>
           ))}
+
+          <div style={{ margin: '8px 0 4px', padding: '6px 16px', fontSize: 10, fontWeight: 700,
+            color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Herramientas
+          </div>
+
+          {toolItems.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
         </nav>
 
         <div className="sidebar-footer">
@@ -61,23 +81,19 @@ export default function Layout({ children }) {
             className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}
             onClick={() => setSidebarOpen(false)}
           >
-            <span className="nav-icon">⚙️</span>
+            <span className="nav-icon">âï¸</span>
             <span>Mi Perfil</span>
           </NavLink>
           <button className="nav-item nav-item-logout" onClick={handleSignOut}>
-            <span className="nav-icon">🚪</span>
-            <span>Cerrar sesión</span>
+            <span className="nav-icon">ðª</span>
+            <span>Cerrar sesiÃ³n</span>
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="main-wrapper">
-        {/* Top bar (mobile) */}
         <header className="topbar">
-          <button className="topbar-menu-btn" onClick={() => setSidebarOpen(true)}>
-            ☰
-          </button>
+          <button className="topbar-menu-btn" onClick={() => setSidebarOpen(true)}>â°</button>
           <span className="topbar-title">Health Tracker</span>
           <span className="topbar-user">{profile?.name?.split(' ')[0]}</span>
         </header>
