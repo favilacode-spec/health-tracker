@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { format, parseISO, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -24,6 +24,8 @@ const INTENSITIES = [
   { id: 'alta',   label: 'Alta',   color: 'var(--danger)' },
 ]
 
+const SYNC_INTERVAL_MS = 5 * 60 * 1000 // 5 minutos
+
 export default function Ejercicio() {
   const { user } = useAuth()
   const [exercises, setExercises] = useState([])
@@ -34,8 +36,18 @@ export default function Ejercicio() {
 
   // Apple Health import state
   const [importWorkouts, setImportWorkouts] = useState([])
-  const [importStatus, setImportStatus] = useState('idle') // idle | parsed | importing | done
+  const [importStatus, setImportStatus] = useState('idle')
   const [importMsg, setImportMsg] = useState('')
+
+  // Hevy state
+  const [hevyConfig, setHevyConfig] = useState(null)
+  const [hevyWorkouts, setHevyWorkouts] = useState([])
+  const [hevyApiKeyInput, setHevyApiKeyInput] = useState('')
+  const [hevySyncing, setHevySyncing] = useState(false)
+  const [hevyMsg, setHevyMsg] = useState({ type: '', text: '' })
+  const [hevyLoading, setHevyLoading] = useState(true)
+  const [expandedWorkout, setExpandedWorkout] = useState(null)
+  const syncIntervalRef = useRef(null)
 
   const [form, setForm] = useState({
     exercise_type: 'caminata',
@@ -50,6 +62,12 @@ export default function Ejercicio() {
   })
 
   useEffect(() => { loadExercises(); loadWeekly() }, [user, selectedDate])
+
+  // Cargar Hevy al montar el componente
+  useEffect(() => {
+    if (user) loadHevyConfig()
+    return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current) }
+  }, [user])
 
   async function loadExercises() {
     const { data } = await supabase.from('exercise_logs').select('*')
@@ -98,7 +116,134 @@ export default function Ejercicio() {
     loadExercises(); loadWeekly()
   }
 
-  // Apple Health workout type → our exercise types
+  // ─── HEVY FUNCTIONS ──────────────────────────────────────────────────────────
+
+  async function getHevyHeaders() {
+    const { data: { session } } = await supabase.auth.getSession()
+    return {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    }
+  }
+
+  async function loadHevyConfig() {
+    setHevyLoading(true)
+    const { data } = await supabase.from('hevy_config').select('*').eq('user_id', user.id).single()
+    setHevyConfig(data || null)
+    if (data) {
+      await loadHevyWorkouts()
+      // Auto-sync si pasaron más de 5 min desde el último sync
+      const lastSync = new Date(data.last_sync_at)
+      if (Date.now() - lastSync.getTime() > SYNC_INTERVAL_MS) {
+        syncHevy(true) // silencioso
+      }
+      // Configurar auto-sync cada 5 min
+      if (syncIntervalRef.current) clearInterval(syncIntervalRef.current)
+      syncIntervalRef.current = setInterval(() => syncHevy(true), SYNC_INTERVAL_MS)
+    }
+    setHevyLoading(false)
+  }
+
+  async function loadHevyWorkouts() {
+    const { data } = await supabase.from('hevy_workouts')
+      .select('*').eq('user_id', user.id)
+      .order('start_time', { ascending: false }).limit(30)
+    setHevyWorkouts(data || [])
+  }
+
+  async function saveHevyKey() {
+    const key = hevyApiKeyInput.trim()
+    if (!key) return
+    setHevySyncing(true)
+    setHevyMsg({ type: '', text: '' })
+    try {
+      const headers = await getHevyHeaders()
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-hevy`,
+        { method: 'POST', headers, body: JSON.stringify({ action: 'save_key', api_key: key }) }
+      )
+      const result = await resp.json()
+      if (!resp.ok) {
+        setHevyMsg({ type: 'error', text: result.error || 'Error al guardar la clave' })
+      } else {
+        setHevyApiKeyInput('')
+        setHevyMsg({ type: 'success', text: '✅ Hevy conectado. Sincronizando historial...' })
+        await loadHevyConfig()
+        await syncHevy(false)
+      }
+    } catch (err) {
+      setHevyMsg({ type: 'error', text: 'Error de conexión: ' + err.message })
+    }
+    setHevySyncing(false)
+  }
+
+  async function syncHevy(silent = false) {
+    if (!silent) setHevySyncing(true)
+    try {
+      const headers = await getHevyHeaders()
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-hevy`,
+        { method: 'POST', headers, body: JSON.stringify({ action: 'sync' }) }
+      )
+      const result = await resp.json()
+      if (resp.ok) {
+        if (!silent && result.synced > 0) {
+          setHevyMsg({ type: 'success', text: `✅ ${result.synced} entrenamientos sincronizados` })
+        } else if (!silent) {
+          setHevyMsg({ type: 'success', text: '✅ Todo actualizado' })
+        }
+        await loadHevyWorkouts()
+        // Actualizar config local
+        const { data } = await supabase.from('hevy_config').select('*').eq('user_id', user.id).single()
+        setHevyConfig(data || null)
+      } else if (!silent) {
+        setHevyMsg({ type: 'error', text: result.error || 'Error al sincronizar' })
+      }
+    } catch (err) {
+      if (!silent) setHevyMsg({ type: 'error', text: 'Error: ' + err.message })
+    }
+    if (!silent) setHevySyncing(false)
+  }
+
+  async function disconnectHevy() {
+    if (!confirm('¿Desconectar Hevy? Se eliminarán los entrenamientos sincronizados.')) return
+    setHevySyncing(true)
+    try {
+      const headers = await getHevyHeaders()
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-hevy`,
+        { method: 'POST', headers, body: JSON.stringify({ action: 'disconnect' }) }
+      )
+      setHevyConfig(null)
+      setHevyWorkouts([])
+      if (syncIntervalRef.current) clearInterval(syncIntervalRef.current)
+      setHevyMsg({ type: '', text: '' })
+    } catch (err) {
+      setHevyMsg({ type: 'error', text: 'Error: ' + err.message })
+    }
+    setHevySyncing(false)
+  }
+
+  function formatLastSync(isoString) {
+    if (!isoString || isoString === '1970-01-01T00:00:00Z') return 'Nunca'
+    const date = new Date(isoString)
+    const diffMs = Date.now() - date.getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+    if (diffMin < 1) return 'Justo ahora'
+    if (diffMin < 60) return `hace ${diffMin} min`
+    const diffH = Math.floor(diffMin / 60)
+    if (diffH < 24) return `hace ${diffH}h`
+    return format(date, "d 'de' MMM", { locale: es })
+  }
+
+  function formatVolume(kg) {
+    if (!kg || kg === 0) return null
+    if (kg >= 1000) return `${(kg / 1000).toFixed(1)} ton`
+    return `${Math.round(kg)} kg`
+  }
+
+  // ─── APPLE HEALTH ────────────────────────────────────────────────────────────
+
   const APPLE_TYPE_MAP = {
     HKWorkoutActivityTypeRunning: 'trote',
     HKWorkoutActivityTypeWalking: 'caminata',
@@ -132,18 +277,15 @@ export default function Ejercicio() {
         const parser = new DOMParser()
         const doc = parser.parseFromString(e.target.result, 'text/xml')
         const workouts = Array.from(doc.querySelectorAll('Workout'))
-
         if (workouts.length === 0) {
-          setImportMsg('❌ No se encontraron entrenamientos en el archivo. Asegurate de subir el archivo export.xml de Apple Health.')
+          setImportMsg('❌ No se encontraron entrenamientos en el archivo.')
           return
         }
-
         const parsed = workouts.map(w => {
           const appleType = w.getAttribute('workoutActivityType') || ''
           const durationRaw = parseFloat(w.getAttribute('duration') || '0')
           const durationUnit = w.getAttribute('durationUnit') || 'min'
           const durationMin = durationUnit === 'min' ? Math.round(durationRaw) : Math.round(durationRaw / 60)
-
           const distRaw = parseFloat(w.getAttribute('totalDistance') || '0')
           const distUnit = w.getAttribute('totalDistanceUnit') || 'km'
           let distKm = null
@@ -152,30 +294,19 @@ export default function Ejercicio() {
             else if (distUnit === 'mi') distKm = Math.round(distRaw * 1.60934 * 100) / 100
             else if (distUnit === 'm') distKm = Math.round(distRaw / 10) / 100
           }
-
           const calRaw = parseFloat(w.getAttribute('totalEnergyBurned') || '0')
           const calUnit = w.getAttribute('totalEnergyBurnedUnit') || 'Cal'
           let cal = null
-          if (calRaw > 0) {
-            cal = calUnit === 'kJ' ? Math.round(calRaw / 4.184) : Math.round(calRaw)
-          }
-
-          // Parse date from "2026-06-15 10:00:00 -0300"
+          if (calRaw > 0) cal = calUnit === 'kJ' ? Math.round(calRaw / 4.184) : Math.round(calRaw)
           const startDateRaw = w.getAttribute('startDate') || ''
           const date = startDateRaw.split(' ')[0] || format(new Date(), 'yyyy-MM-dd')
-
-          const exerciseType = APPLE_TYPE_MAP[appleType] || 'otro'
-          const intensity = appleTypeToIntensity(appleType)
-          const source = w.getAttribute('sourceName') || 'Apple Health'
-
-          return { date, exercise_type: exerciseType, duration_min: durationMin, intensity, calories_burned: cal, distance_km: distKm, notes: `Importado de ${source}`, _appleType: appleType }
+          return { date, exercise_type: APPLE_TYPE_MAP[appleType] || 'otro', duration_min: durationMin, intensity: appleTypeToIntensity(appleType), calories_burned: cal, distance_km: distKm, notes: `Importado de ${w.getAttribute('sourceName') || 'Apple Health'}` }
         }).filter(w => w.duration_min > 0)
-
         setImportWorkouts(parsed)
         setImportStatus('parsed')
         setImportMsg(`✅ Se encontraron ${parsed.length} entrenamientos listos para importar.`)
       } catch {
-        setImportMsg('❌ Error al leer el archivo. Verificá que sea el export.xml de Apple Health.')
+        setImportMsg('❌ Error al leer el archivo.')
       }
     }
     reader.readAsText(file)
@@ -183,30 +314,14 @@ export default function Ejercicio() {
 
   async function importToSupabase() {
     setImportStatus('importing')
-    const rows = importWorkouts.map(w => ({
-      user_id: user.id,
-      date: w.date,
-      exercise_type: w.exercise_type,
-      duration_min: w.duration_min,
-      intensity: w.intensity,
-      calories_burned: w.calories_burned,
-      distance_km: w.distance_km,
-      notes: w.notes,
-    }))
-
-    // Insert in batches of 50
+    const rows = importWorkouts.map(w => ({ user_id: user.id, ...w }))
     let errors = 0
     for (let i = 0; i < rows.length; i += 50) {
       const { error } = await supabase.from('exercise_logs').insert(rows.slice(i, i + 50))
       if (error) errors++
     }
-
     setImportStatus('done')
-    if (errors === 0) {
-      setImportMsg(`🎉 ¡${importWorkouts.length} entrenamientos importados exitosamente!`)
-    } else {
-      setImportMsg(`⚠️ Se importaron la mayoría pero hubo ${errors} errores en lotes.`)
-    }
+    setImportMsg(errors === 0 ? `🎉 ¡${importWorkouts.length} entrenamientos importados!` : `⚠️ Importados con ${errors} errores en lotes.`)
     loadExercises(); loadWeekly()
   }
 
@@ -217,7 +332,6 @@ export default function Ejercicio() {
 
   const totalMinToday = exercises.reduce((s, e) => s + e.duration_min, 0)
   const totalCalToday = exercises.reduce((s, e) => s + (e.calories_burned || 0), 0)
-  const selectedType = EXERCISE_TYPES.find(t => t.id === form.exercise_type)
   const showStrengthFields = ['pesas', 'funcional'].includes(form.exercise_type)
   const showDistanceFields = ['caminata', 'trote', 'bicicleta', 'natacion'].includes(form.exercise_type)
 
@@ -259,14 +373,27 @@ export default function Ejercicio() {
           <div className="stat-card-value">{exercises.length}</div>
           <div className="stat-card-change neutral">hoy</div>
         </div>
+        {hevyConfig && (
+          <div className="stat-card">
+            <div className="stat-card-label">🏋️ Hevy</div>
+            <div className="stat-card-value" style={{ fontSize: '1.2rem' }}>{hevyWorkouts.length}</div>
+            <div className="stat-card-change neutral">entrenamientos</div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', marginBottom: 24 }}>
-        {[['registrar', '➕ Registrar'], ['historial', '📋 Historial'], ['semana', '📊 Semana'], ['apple', '🍎 Apple Health']].map(([key, label]) => (
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', marginBottom: 24, overflowX: 'auto' }}>
+        {[
+          ['registrar', '➕ Registrar'],
+          ['historial', '📋 Historial'],
+          ['semana', '📊 Semana'],
+          ['hevy', hevyConfig ? '🏋️ Hevy ✅' : '🏋️ Hevy'],
+          ['apple', '🍎 Apple Health'],
+        ].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
             style={{
-              padding: '10px 20px', fontSize: 'var(--text-sm)', fontWeight: 500,
+              padding: '10px 20px', fontSize: 'var(--text-sm)', fontWeight: 500, whiteSpace: 'nowrap',
               borderBottom: tab === key ? '2px solid var(--primary)' : '2px solid transparent',
               color: tab === key ? 'var(--primary)' : 'var(--gray-500)', marginBottom: -1
             }}>
@@ -277,22 +404,21 @@ export default function Ejercicio() {
 
       {msg.text && <div className={msg.type === 'success' ? 'form-success' : 'form-error'} style={{ marginBottom: 16 }}>{msg.text}</div>}
 
-      {/* TAB: Registrar */}
+      {/* ═══════════════════════════════════════════════════════════
+          TAB: Registrar
+      ═══════════════════════════════════════════════════════════ */}
       {tab === 'registrar' && (
         <div className="section-grid">
           <div className="card" style={{ gridColumn: '1 / -1' }}>
             <div className="card-title">➕ Nuevo ejercicio</div>
             <form onSubmit={saveExercise}>
-              {/* Tipo de ejercicio */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--gray-700)', display: 'block', marginBottom: 8 }}>Tipo de ejercicio</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {EXERCISE_TYPES.map(t => (
-                    <button key={t.id} type="button"
-                      onClick={() => setForm(f => ({ ...f, exercise_type: t.id }))}
+                    <button key={t.id} type="button" onClick={() => setForm(f => ({ ...f, exercise_type: t.id }))}
                       style={{
-                        padding: '8px 14px', borderRadius: 'var(--radius-sm)',
-                        fontSize: 'var(--text-xs)', fontWeight: 600, transition: 'all 0.15s',
+                        padding: '8px 14px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', fontWeight: 600, transition: 'all 0.15s',
                         border: form.exercise_type === t.id ? '2px solid var(--primary)' : '2px solid var(--gray-300)',
                         background: form.exercise_type === t.id ? 'var(--primary-light)' : 'white',
                         color: form.exercise_type === t.id ? 'var(--primary-dark)' : 'var(--gray-600)',
@@ -302,17 +428,13 @@ export default function Ejercicio() {
                   ))}
                 </div>
               </div>
-
-              {/* Intensidad */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--gray-700)', display: 'block', marginBottom: 8 }}>Intensidad</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {INTENSITIES.map(int => (
-                    <button key={int.id} type="button"
-                      onClick={() => setForm(f => ({ ...f, intensity: int.id }))}
+                    <button key={int.id} type="button" onClick={() => setForm(f => ({ ...f, intensity: int.id }))}
                       style={{
-                        padding: '8px 20px', borderRadius: 'var(--radius-sm)',
-                        fontSize: 'var(--text-sm)', fontWeight: 600, transition: 'all 0.15s',
+                        padding: '8px 20px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)', fontWeight: 600, transition: 'all 0.15s',
                         border: `2px solid ${form.intensity === int.id ? int.color : 'var(--gray-300)'}`,
                         background: form.intensity === int.id ? int.color + '20' : 'white',
                         color: form.intensity === int.id ? int.color : 'var(--gray-600)',
@@ -322,56 +444,36 @@ export default function Ejercicio() {
                   ))}
                 </div>
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 12 }}>
                 <div className="form-group">
                   <label>Duración (min) *</label>
-                  <input type="number" min="1" max="600" placeholder="ej: 45" required
-                    value={form.duration_min} onChange={e => setForm(f => ({ ...f, duration_min: e.target.value }))} />
+                  <input type="number" min="1" max="600" placeholder="ej: 45" required value={form.duration_min} onChange={e => setForm(f => ({ ...f, duration_min: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label>Calorías quemadas</label>
-                  <input type="number" min="0" placeholder="opcional"
-                    value={form.calories_burned} onChange={e => setForm(f => ({ ...f, calories_burned: e.target.value }))} />
+                  <input type="number" min="0" placeholder="opcional" value={form.calories_burned} onChange={e => setForm(f => ({ ...f, calories_burned: e.target.value }))} />
                 </div>
                 {showDistanceFields && (
                   <div className="form-group">
                     <label>Distancia (km)</label>
-                    <input type="number" step="0.01" min="0" placeholder="ej: 3.5"
-                      value={form.distance_km} onChange={e => setForm(f => ({ ...f, distance_km: e.target.value }))} />
+                    <input type="number" step="0.01" min="0" placeholder="ej: 3.5" value={form.distance_km} onChange={e => setForm(f => ({ ...f, distance_km: e.target.value }))} />
                   </div>
                 )}
                 {showStrengthFields && (
                   <>
-                    <div className="form-group">
-                      <label>Series</label>
-                      <input type="number" min="1" placeholder="ej: 3"
-                        value={form.sets} onChange={e => setForm(f => ({ ...f, sets: e.target.value }))} />
-                    </div>
-                    <div className="form-group">
-                      <label>Reps por serie</label>
-                      <input type="number" min="1" placeholder="ej: 12"
-                        value={form.reps} onChange={e => setForm(f => ({ ...f, reps: e.target.value }))} />
-                    </div>
-                    <div className="form-group">
-                      <label>Peso usado (kg)</label>
-                      <input type="number" step="0.5" min="0" placeholder="ej: 20"
-                        value={form.weight_used_kg} onChange={e => setForm(f => ({ ...f, weight_used_kg: e.target.value }))} />
-                    </div>
+                    <div className="form-group"><label>Series</label><input type="number" min="1" placeholder="ej: 3" value={form.sets} onChange={e => setForm(f => ({ ...f, sets: e.target.value }))} /></div>
+                    <div className="form-group"><label>Reps por serie</label><input type="number" min="1" placeholder="ej: 12" value={form.reps} onChange={e => setForm(f => ({ ...f, reps: e.target.value }))} /></div>
+                    <div className="form-group"><label>Peso usado (kg)</label><input type="number" step="0.5" min="0" placeholder="ej: 20" value={form.weight_used_kg} onChange={e => setForm(f => ({ ...f, weight_used_kg: e.target.value }))} /></div>
                   </>
                 )}
               </div>
-
               <div className="form-group" style={{ marginBottom: 16 }}>
                 <label>Notas</label>
-                <input type="text" placeholder="Cómo te sentiste, circuito, etc."
-                  value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                <input type="text" placeholder="Cómo te sentiste, circuito, etc." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
-
               <button type="submit" className="btn-primary">Guardar ejercicio</button>
             </form>
           </div>
-
           {exercises.length > 0 && (
             <div className="card" style={{ gridColumn: '1 / -1' }}>
               <div className="card-title">🏅 Ejercicios de hoy</div>
@@ -379,28 +481,19 @@ export default function Ejercicio() {
                 const type = EXERCISE_TYPES.find(t => t.id === ex.exercise_type)
                 const intensity = INTENSITIES.find(i => i.id === ex.intensity)
                 return (
-                  <div key={ex.id} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '12px 0', borderBottom: '1px solid var(--gray-100)'
-                  }}>
+                  <div key={ex.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--gray-100)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span style={{ fontSize: '1.5rem' }}>{type?.icon || '🏅'}</span>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{type?.label || ex.exercise_type}</div>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                          ⏱️ {ex.duration_min} min
-                          {ex.distance_km ? ` · 📍 ${ex.distance_km} km` : ''}
-                          {ex.calories_burned ? ` · 🔥 ${ex.calories_burned} kcal` : ''}
-                          {ex.sets ? ` · ${ex.sets}×${ex.reps}` : ''}
-                          {ex.weight_used_kg ? ` · ${ex.weight_used_kg}kg` : ''}
+                          ⏱️ {ex.duration_min} min{ex.distance_km ? ` · 📍 ${ex.distance_km} km` : ''}{ex.calories_burned ? ` · 🔥 ${ex.calories_burned} kcal` : ''}{ex.sets ? ` · ${ex.sets}×${ex.reps}` : ''}{ex.weight_used_kg ? ` · ${ex.weight_used_kg}kg` : ''}
                         </div>
                         {ex.notes && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', marginTop: 2 }}>{ex.notes}</div>}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="badge" style={{ background: intensity?.color + '20', color: intensity?.color }}>
-                        {intensity?.label}
-                      </span>
+                      <span className="badge" style={{ background: intensity?.color + '20', color: intensity?.color }}>{intensity?.label}</span>
                       <button className="btn-icon" onClick={() => deleteExercise(ex.id)}>🗑️</button>
                     </div>
                   </div>
@@ -411,7 +504,9 @@ export default function Ejercicio() {
         </div>
       )}
 
-      {/* TAB: Historial */}
+      {/* ═══════════════════════════════════════════════════════════
+          TAB: Historial
+      ═══════════════════════════════════════════════════════════ */}
       {tab === 'historial' && (
         <div className="card">
           <div className="card-title">📋 Últimos ejercicios</div>
@@ -419,10 +514,211 @@ export default function Ejercicio() {
         </div>
       )}
 
-      {/* TAB: Apple Health */}
+      {/* ═══════════════════════════════════════════════════════════
+          TAB: HEVY
+      ═══════════════════════════════════════════════════════════ */}
+      {tab === 'hevy' && (
+        <div>
+          {hevyLoading ? (
+            <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+          ) : !hevyConfig ? (
+            /* ── Sin conectar ── */
+            <div>
+              <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #7C3AED' }}>
+                <div className="card-title">🏋️ Conectar Hevy</div>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)', marginBottom: 16 }}>
+                  Sincronizá automáticamente tus entrenamientos de Hevy. Los datos se actualizan cada 5 minutos mientras usás la app.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginBottom: 20 }}>
+                  {[
+                    { n: '1', text: 'Suscribite a Hevy Pro en la app', icon: '💳' },
+                    { n: '2', text: 'Entrá a hevy.com/settings?developer', icon: '🌐' },
+                    { n: '3', text: 'Copiá tu API Key', icon: '🔑' },
+                    { n: '4', text: 'Pegala acá abajo y conectá', icon: '🔗' },
+                  ].map(s => (
+                    <div key={s.n} style={{ display: 'flex', gap: 10, padding: 12, background: 'var(--gray-50)', borderRadius: 'var(--radius-sm)' }}>
+                      <span style={{ background: '#7C3AED', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.n}</span>
+                      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-700)' }}>{s.icon} {s.text}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <input
+                    type="password"
+                    placeholder="Pegá tu Hevy API Key aquí"
+                    value={hevyApiKeyInput}
+                    onChange={e => setHevyApiKeyInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && saveHevyKey()}
+                    style={{ flex: 1, padding: '10px 14px', border: '1.5px solid var(--gray-300)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)' }}
+                  />
+                  <button
+                    className="btn-primary"
+                    onClick={saveHevyKey}
+                    disabled={hevySyncing || !hevyApiKeyInput.trim()}
+                    style={{ background: '#7C3AED', whiteSpace: 'nowrap' }}
+                  >
+                    {hevySyncing ? '⏳ Conectando...' : '🔗 Conectar'}
+                  </button>
+                </div>
+                {hevyMsg.text && (
+                  <div className={hevyMsg.type === 'error' ? 'form-error' : 'form-success'} style={{ marginTop: 12 }}>
+                    {hevyMsg.text}
+                  </div>
+                )}
+                <div style={{ marginTop: 12, padding: '10px 14px', background: '#F5F3FF', borderRadius: 'var(--radius-sm)' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', color: '#7C3AED' }}>
+                    🔒 Tu API key se guarda de forma segura en tu base de datos privada con Row Level Security
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ── Conectado ── */
+            <div>
+              {/* Status bar */}
+              <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #7C3AED' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981' }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>🏋️ Hevy conectado</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
+                        Último sync: {formatLastSync(hevyConfig.last_sync_at)} · {hevyWorkouts.length} entrenamientos · Auto-sync cada 5 min
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn-primary"
+                      onClick={() => syncHevy(false)}
+                      disabled={hevySyncing}
+                      style={{ background: '#7C3AED', fontSize: 'var(--text-sm)', padding: '8px 16px' }}
+                    >
+                      {hevySyncing ? '⏳ Sincronizando...' : '🔄 Sync ahora'}
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={disconnectHevy}
+                      disabled={hevySyncing}
+                      style={{ fontSize: 'var(--text-sm)', padding: '8px 14px' }}
+                    >
+                      Desconectar
+                    </button>
+                  </div>
+                </div>
+                {hevyMsg.text && (
+                  <div className={hevyMsg.type === 'error' ? 'form-error' : 'form-success'} style={{ marginTop: 12 }}>
+                    {hevyMsg.text}
+                  </div>
+                )}
+              </div>
+
+              {/* Lista de workouts */}
+              {hevyWorkouts.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🏋️</div>
+                  <p>No hay entrenamientos sincronizados todavía.</p>
+                  <button className="btn-primary" onClick={() => syncHevy(false)} style={{ background: '#7C3AED', marginTop: 12 }}>
+                    Sincronizar ahora
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {hevyWorkouts.map(w => {
+                    const isExpanded = expandedWorkout === w.hevy_id
+                    const exercises = w.exercises || []
+                    const vol = formatVolume(w.total_volume_kg)
+                    return (
+                      <div key={w.hevy_id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        {/* Header del workout */}
+                        <div
+                          onClick={() => setExpandedWorkout(isExpanded ? null : w.hevy_id)}
+                          style={{ padding: '14px 18px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', marginBottom: 4 }}>
+                              💪 {w.title || 'Entrenamiento'}
+                            </div>
+                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
+                              {w.start_time ? format(new Date(w.start_time), "EEEE d 'de' MMMM, HH:mm", { locale: es }) : '—'}
+                            </div>
+                            <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+                              {w.duration_min > 0 && (
+                                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-600)' }}>⏱️ {w.duration_min} min</span>
+                              )}
+                              {w.total_sets > 0 && (
+                                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-600)' }}>📊 {w.total_sets} series</span>
+                              )}
+                              {vol && (
+                                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: '#7C3AED' }}>🏋️ {vol} vol.</span>
+                              )}
+                              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>
+                                {exercises.length} ejercicio{exercises.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+                          <span style={{ color: 'var(--gray-400)', fontSize: 'var(--text-sm)', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                        </div>
+
+                        {/* Detalle expandido */}
+                        {isExpanded && exercises.length > 0 && (
+                          <div style={{ borderTop: '1px solid var(--gray-100)', padding: '12px 18px', background: 'var(--gray-50)' }}>
+                            {exercises.map((ex, i) => {
+                              const sets = ex.sets || []
+                              const workSets = sets.filter(s => s.type !== 'warmup')
+                              return (
+                                <div key={i} style={{ marginBottom: i < exercises.length - 1 ? 12 : 0 }}>
+                                  <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 4 }}>
+                                    {ex.title || ex.exercise_template_id}
+                                  </div>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                    {sets.map((set, j) => {
+                                      const isWarmup = set.type === 'warmup'
+                                      const label = set.weight_kg
+                                        ? `${set.weight_kg}kg × ${set.reps}`
+                                        : set.reps
+                                        ? `× ${set.reps}`
+                                        : set.duration_seconds
+                                        ? `${set.duration_seconds}s`
+                                        : '—'
+                                      return (
+                                        <span key={j} style={{
+                                          fontSize: 'var(--text-xs)', fontWeight: 600,
+                                          padding: '3px 8px', borderRadius: 20,
+                                          background: isWarmup ? '#FEF3C7' : '#EDE9FE',
+                                          color: isWarmup ? '#92400E' : '#5B21B6',
+                                          border: `1px solid ${isWarmup ? '#FCD34D' : '#C4B5FD'}`
+                                        }}>
+                                          {isWarmup ? '🔥 ' : ''}{label}
+                                        </span>
+                                      )
+                                    })}
+                                  </div>
+                                  {workSets.length > 0 && workSets[0].weight_kg && (
+                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', marginTop: 3 }}>
+                                      Vol: {Math.round(workSets.reduce((s, set) => s + (set.weight_kg || 0) * (set.reps || 0), 0))} kg
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          TAB: Apple Health
+      ═══════════════════════════════════════════════════════════ */}
       {tab === 'apple' && (
         <div>
-          {/* Instrucciones */}
           <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #555' }}>
             <div className="card-title">🍎 Cómo exportar desde Apple Health</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, marginTop: 8 }}>
@@ -441,51 +737,28 @@ export default function Ejercicio() {
               ))}
             </div>
           </div>
-
-          {/* Zona de carga */}
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="card-title">📁 Subir archivo export.xml</div>
-            <div style={{
-              border: '2px dashed var(--gray-300)', borderRadius: 'var(--radius)',
-              padding: '32px 20px', textAlign: 'center', marginBottom: 16,
-              background: 'var(--gray-50)'
-            }}>
+            <div style={{ border: '2px dashed var(--gray-300)', borderRadius: 'var(--radius)', padding: '32px 20px', textAlign: 'center', marginBottom: 16, background: 'var(--gray-50)' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📱</div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Seleccioná el archivo export.xml</div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginBottom: 16 }}>El archivo puede pesar varios MB, es normal</div>
               <label style={{ cursor: 'pointer' }}>
-                <span className="btn-primary" style={{ display: 'inline-block', padding: '10px 24px' }}>
-                  Elegir archivo XML
-                </span>
+                <span className="btn-primary" style={{ display: 'inline-block', padding: '10px 24px' }}>Elegir archivo XML</span>
                 <input type="file" accept=".xml" style={{ display: 'none' }}
                   onChange={e => {
                     const file = e.target.files?.[0]
-                    if (file) {
-                      setImportStatus('idle')
-                      setImportWorkouts([])
-                      setImportMsg('⏳ Procesando archivo...')
-                      parseAppleHealthXML(file)
-                    }
+                    if (file) { setImportStatus('idle'); setImportWorkouts([]); setImportMsg('⏳ Procesando archivo...'); parseAppleHealthXML(file) }
                   }} />
               </label>
             </div>
-
-            {importMsg && (
-              <div className={importMsg.startsWith('❌') ? 'form-error' : 'form-success'} style={{ marginBottom: 12 }}>
-                {importMsg}
-              </div>
-            )}
-
+            {importMsg && <div className={importMsg.startsWith('❌') ? 'form-error' : 'form-success'} style={{ marginBottom: 12 }}>{importMsg}</div>}
             {importStatus === 'parsed' && importWorkouts.length > 0 && (
               <div>
-                <div style={{ fontWeight: 600, marginBottom: 12 }}>
-                  Vista previa — {importWorkouts.length} entrenamientos encontrados:
-                </div>
+                <div style={{ fontWeight: 600, marginBottom: 12 }}>Vista previa — {importWorkouts.length} entrenamientos:</div>
                 <div style={{ maxHeight: 320, overflowY: 'auto', marginBottom: 16 }}>
                   <table className="data-table">
-                    <thead>
-                      <tr><th>Fecha</th><th>Ejercicio</th><th>Duración</th><th>Distancia</th><th>Calorías</th></tr>
-                    </thead>
+                    <thead><tr><th>Fecha</th><th>Ejercicio</th><th>Duración</th><th>Distancia</th><th>Calorías</th></tr></thead>
                     <tbody>
                       {importWorkouts.slice(0, 100).map((w, i) => {
                         const type = EXERCISE_TYPES.find(t => t.id === w.exercise_type)
@@ -501,38 +774,20 @@ export default function Ejercicio() {
                       })}
                     </tbody>
                   </table>
-                  {importWorkouts.length > 100 && (
-                    <div style={{ textAlign: 'center', padding: 8, fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                      ... y {importWorkouts.length - 100} más
-                    </div>
-                  )}
+                  {importWorkouts.length > 100 && <div style={{ textAlign: 'center', padding: 8, fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>... y {importWorkouts.length - 100} más</div>}
                 </div>
-                <button className="btn-primary" onClick={importToSupabase}>
-                  ✅ Importar {importWorkouts.length} entrenamientos
-                </button>
-                <span style={{ marginLeft: 12, fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                  Se agregarán a tu historial de ejercicios
-                </span>
+                <button className="btn-primary" onClick={importToSupabase}>✅ Importar {importWorkouts.length} entrenamientos</button>
               </div>
             )}
-
-            {importStatus === 'importing' && (
-              <div style={{ textAlign: 'center', padding: 20 }}>
-                <div className="spinner" style={{ margin: '0 auto 12px' }} />
-                <div>Importando entrenamientos...</div>
-              </div>
-            )}
-
-            {importStatus === 'done' && (
-              <button className="btn-secondary" onClick={() => { setImportStatus('idle'); setImportWorkouts([]); setImportMsg('') }}>
-                Importar otro archivo
-              </button>
-            )}
+            {importStatus === 'importing' && <div style={{ textAlign: 'center', padding: 20 }}><div className="spinner" style={{ margin: '0 auto 12px' }} /><div>Importando...</div></div>}
+            {importStatus === 'done' && <button className="btn-secondary" onClick={() => { setImportStatus('idle'); setImportWorkouts([]); setImportMsg('') }}>Importar otro archivo</button>}
           </div>
         </div>
       )}
 
-      {/* TAB: Semana */}
+      {/* ═══════════════════════════════════════════════════════════
+          TAB: Semana
+      ═══════════════════════════════════════════════════════════ */}
       {tab === 'semana' && (
         <div className="section-grid">
           <div className="card">
@@ -596,9 +851,7 @@ function HistorialEjercicio({ userId }) {
 
   return (
     <table className="data-table">
-      <thead>
-        <tr><th>Fecha</th><th>Ejercicio</th><th>Duración</th><th>Intensidad</th><th>Calorías</th></tr>
-      </thead>
+      <thead><tr><th>Fecha</th><th>Ejercicio</th><th>Duración</th><th>Intensidad</th><th>Calorías</th></tr></thead>
       <tbody>
         {logs.map(ex => {
           const type = EXERCISE_TYPES.find(t => t.id === ex.exercise_type)
