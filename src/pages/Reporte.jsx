@@ -8,7 +8,7 @@ const GROQ_KEY = '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'
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 function hhmm(h) {
-  if (!h) return 'â'
+  if (!h) return '—'
   const hrs = Math.floor(h), min = Math.round((h - hrs) * 60)
   return `${hrs}h ${min}m`
 }
@@ -17,7 +17,7 @@ function StatRow({ label, value, unit = '' }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
       <span style={{ color: '#64748b', fontSize: 13 }}>{label}</span>
-      <span style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>{value ? `${value}${unit}` : 'â'}</span>
+      <span style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>{value ? `${value}${unit}` : '—'}|/span>
     </div>
   )
 }
@@ -30,7 +30,7 @@ export default function Reporte() {
   const [aiAnalysis, setAiAnalysis] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
 
-  // âââ Fetch all data âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── Fetch all data ─────────────────────────────────────────────────────────
   async function generateReport() {
     setStatus('loading')
     setAiAnalysis('')
@@ -47,7 +47,7 @@ export default function Reporte() {
       const { data: tirz } = await supabase.from('tirzepatida_dosis')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
 
-      setProgress('Cargando nutriciÃ³n...')
+      setProgress('Cargando nutrición...')
       const { data: ali } = await supabase.from('alimentos')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(60)
 
@@ -55,11 +55,11 @@ export default function Reporte() {
       const { data: eje } = await supabase.from('ejercicios')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(30)
 
-      setProgress('Cargando sueÃ±o...')
+      setProgress('Cargando sueño...')
       const { data: sue } = await supabase.from('sleep_records')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(30)
 
-      // ââ Compute averages ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      // ── Compute averages ────────────────────────────────────────────────────
       const avg = (arr, key) => {
         const vals = arr?.filter(r => r[key] != null).map(r => r[key]) || []
         return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null
@@ -86,15 +86,15 @@ export default function Reporte() {
         tirz_last:   tirz?.[0] || null,
         tirz_count:  tirz?.length || 0,
         tirz_dosis_actual: tirz?.[0]?.dosis_mg || null,
-        // NutriciÃ³n (Ãºltimos 30 dÃ­as)
+        // Nutrición (últimos 30 días)
         nut_prom_calorias:  avg(aliLast30, 'calorias'),
         nut_prom_proteinas: avg(aliLast30, 'proteinas_g'),
         nut_prom_carbs:     avg(aliLast30, 'carbohidratos_g'),
         nut_prom_grasas:    avg(aliLast30, 'grasas_g'),
-        // Ejercicio (Ãºltimos 30 dÃ­as)
+        // Ejercicio (últimos 30 días)
         eje_sesiones: ejeLast30.length,
         eje_prom_duracion: avg(ejeLast30, 'duracion_min'),
-        // SueÃ±o (Ãºltimos 30 dÃ­as)
+        // Sueño (últimos 30 días)
         sue_count: sueLast30.length,
         sue_prom_total:    avg(sueLast30, 'duracion_total'),
         sue_prom_profundo: avg(sueLast30, 'duracion_profundo'),
@@ -113,7 +113,7 @@ export default function Reporte() {
     }
   }
 
-  // âââ Groq AI Analysis ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── Groq AI Analysis ──────────────────────────────────────────────────────
   async function generateAI(data) {
     setAiLoading(true)
     setAiAnalysis('')
@@ -121,45 +121,45 @@ export default function Reporte() {
       const bio  = data.bio_last
       const bioF = data.bio_first
 
-      const prompt = `Eres un experto en nutriciÃ³n, composiciÃ³n corporal, tirzepatida (Mounjaro/Zepbound) y fisiologÃ­a del ejercicio.
-Analiza los siguientes datos de salud de ${data.usuario} y genera un anÃ¡lisis personalizado, conciso y motivador en espaÃ±ol.
+      const prompt = `Eres un experto en nutrición, composición corporal, tirzepatida (Mounjaro/Zepbound) y fisiología del ejercicio.
+Analiza los siguientes datos de salud de ${data.usuario} y genera un análisis personalizado, conciso y motivador en español.
 
-DATOS MÃS RECIENTES:
+DATOS MÁS RECIENTES:
 - Fecha del reporte: ${data.generado}
 - Tirzepatida: ${data.tirz_dosis_actual ? `${data.tirz_dosis_actual}mg (${data.tirz_count} dosis registradas)` : 'No registrada'}
 ${bio ? `
-BIOPEDANCIA ÃLTIMA (${bio.fecha}):
+BIOPEDANCIA ÚLTIMA (${bio.fecha}):
 - Peso: ${bio.peso}kg | IMC: ${bio.imc}
 - % Grasa: ${bio.porcentaje_grasa}% | Masa grasa: ${bio.masa_grasa}kg
-- MÃºsculo esquelÃ©tico: ${bio.masa_muscular_esqueletica}kg
+- Músculo esquelético: ${bio.masa_muscular_esqueletica}kg
 - Agua corporal: ${bio.agua_corporal}L
 - Grasa visceral: ${bio.grasa_visceral}
 - Metabolismo basal: ${bio.metabolismo_basal}kcal` : ''}
 ${bioF && bioF.fecha !== bio?.fecha ? `
 BIOPEDANCIA INICIAL (${bioF.fecha}):
 - Peso inicial: ${bioF.peso}kg | % Grasa inicial: ${bioF.porcentaje_grasa}%
-- MÃºsculo inicial: ${bioF.masa_muscular_esqueletica}kg
-CAMBIOS: Peso ${bio?.peso && bioF?.peso ? (bio.peso - bioF.peso).toFixed(1) : '?'}kg | Grasa ${bio?.porcentaje_grasa && bioF?.porcentaje_grasa ? (bio.porcentaje_grasa - bioF.porcentaje_grasa).toFixed(1) : '?'}% | MÃºsculo ${bio?.masa_muscular_esqueletica && bioF?.masa_muscular_esqueletica ? (bio.masa_muscular_esqueletica - bioF.masa_muscular_esqueletica).toFixed(1) : '?'}kg` : ''}
+- Músculo inicial: ${bioF.masa_muscular_esqueletica}kg
+CAMBIOS: Peso ${bio?.peso && bioF?.peso ? (bio.peso - bioF.peso).toFixed(1) : '?'}kg | Grasa ${bio?.porcentaje_grasa && bioF?.porcentaje_grasa ? (bio.porcentaje_grasa - bioF.porcentaje_grasa).toFixed(1) : '?'}% | Músculo ${bio?.masa_muscular_esqueletica && bioF?.masa_muscular_esqueletica ? (bio.masa_muscular_esqueletica - bioF.masa_muscular_esqueletica).toFixed(1) : '?'}kg` : ''}
 ${data.nut_prom_calorias ? `
-NUTRICIÃN (promedio Ãºltimos 30 dÃ­as):
-- CalorÃ­as: ${data.nut_prom_calorias}kcal/dÃ­a
-- ProteÃ­nas: ${data.nut_prom_proteinas}g | Carbs: ${data.nut_prom_carbs}g | Grasas: ${data.nut_prom_grasas}g` : ''}
+NUTRICIÓN (promedio últimos 30 días):
+- Calorías: ${data.nut_prom_calorias}kcal/día
+- Proteínas: ${data.nut_prom_proteinas}g | Carbs: ${data.nut_prom_carbs}g | Grasas: ${data.nut_prom_grasas}g` : ''}
 ${data.eje_sesiones ? `
-EJERCICIO (Ãºltimos 30 dÃ­as):
-- ${data.eje_sesiones} sesiones | Promedio: ${data.eje_prom_duracion}min/sesiÃ³n` : ''}
+EJERCICIO (últimos 30 días):
+- ${data.eje_sesiones} sesiones | Promedio: ${data.eje_prom_duracion}min/sesión` : ''}
 ${data.sue_count ? `
-SUEÃO (promedio Ãºltimas 30 noches):
+SUEÑO (promedio últimas 30 noches):
 - Total: ${hhmm(data.sue_prom_total)} | Profundo: ${hhmm(data.sue_prom_profundo)} | REM: ${hhmm(data.sue_prom_rem)}` : ''}
 
-Genera un anÃ¡lisis estructurado con estas secciones (usa emojis y formato claro):
-1. ð¯ PROGRESO GENERAL (2-3 oraciones sobre evoluciÃ³n y logros)
-2. ðª COMPOSICIÃN CORPORAL (anÃ¡lisis de mÃºsculo vs grasa, ratio saludable)
-3. ð¥ NUTRICIÃN Y ENERGÃA (cvaluaciÃ³n de macros segÃºn objetivos con tirzepatida)
-4. ð ACTIVIDAD FÃSICA (evaluaciÃ³n de ejercicio y recomendaciones)
-5. ð CALIDAD DE SUEÃO (anÃ¡lisis y su relaciÃ³n con pÃ©rdida de peso/tirzepatida)
-6. â¡ RECOMENDACIONES PRIORITARIAS (3 acciones concretas para las prÃ³ximas 2 semanas)
+Genera un análisis estructurado con estas secciones (usa emojis y formato claro):
+1. 🎯 PROGRESO GENERAL (2-3 oraciones sobre evolución y logros)
+2. 💪 COMPOSICIÓN CORPORAL (análisis de músculo vs grasa, ratio saludable)
+3. 🥗 NUTRICIÓN Y ENERGÍA (evaluación de macros según objetivos con tirzepatida)
+4. 🏃 ACTIVIDAD FÍSICA (evaluación de ejercicio y recomendaciones)
+5. 🌙 CALIDAD DE SUEÑO (análisis y su relación con pérdida de peso/tirzepatida)
+6. ⚡ RECOMENDACIONES PRIORITARIAS (3 acciones concretas para las próximas 2 semanas)
 
-SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
+Sé específico con los números. Máximo 400 palabras total.`
 
       const res = await fetch(GROQ_URL, {
         method: 'POST',
@@ -172,9 +172,9 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
         })
       })
       const json = await res.json()
-      setAiAnalysis(json.choices?.[0]?.message?.content || 'No se pudo generar el anÃ¡lisis.')
+      setAiAnalysis(json.choices?.[0]?.message?.content || 'No se pudo generar el análisis.')
     } catch (e) {
-      setAiAnalysis('Error al generar anÃ¡lisis: ' + e.message)
+      setAiAnalysis('Error al generar análisis: ' + e.message)
     }
     setAiLoading(false)
   }
@@ -189,13 +189,13 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1>ð Reporte de Salud</h1>
-          <p>Resumen completo con anÃ¡lisis de IA â imprime o guarda como PDF</p>
+          <h1>📋 Reporte de Salud</h1>
+          <p>Resumen completo con análisis de IA — imprime o guarda como PDF</p>
         </div>
         {status === 'done' && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={handlePrint} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              ð¨ï¸ Imprimir / PDF
+              🖨️ Imprimir / PDF
             </button>
             <button onClick={() => { setStatus('idle'); setReportData(null); setAiAnalysis('') }}
               style={{ color: 'var(--gray-500)', fontSize: 'var(--text-sm)', padding: '8px 14px', border: '1px solid var(--gray-200)', borderRadius: 8 }}>
@@ -205,16 +205,16 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
         )}
       </div>
 
-      {/* âââ Generate button ââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+      {/* ─── Generate button ──────────────────────────────────────────────────── */}
       {status === 'idle' && (
         <div className="card" style={{ maxWidth: 520 }}>
-          <div className="card-title">ð Generar reporte completo</div>
+          <div className="card-title">📊 Generar reporte completo</div>
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)', lineHeight: 1.6, marginBottom: 20 }}>
-            Compila todos tus datos: biopedancia, peso, tirzepatida, nutriciÃ³n, ejercicio y sueÃ±o.
-            La IA de Groq genera un anÃ¡lisis personalizado.
+            Compila todos tus datos: biopedancia, peso, tirzepatida, nutrición, ejercicio y sueño.
+            La IA de Groq genera un análisis personalizado.
           </p>
           <button className="btn-primary" onClick={generateReport} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            ð¤ Generar reporte + anÃ¡lisis IA
+            🤖 Generar reporte + análisis IA
           </button>
         </div>
       )}
@@ -233,7 +233,7 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
         </div>
       )}
 
-      {/* ââ REPORT ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+      {/* ── REPORT ──────────────────────────────────────────────────────────── */}
       {status === 'done' && rd && (
         <div id="reporte-contenido">
           {/* Header */}
@@ -241,7 +241,7 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, marginBottom: 4 }}>
-                  ð Reporte de Salud â {rd.usuario}
+                  💉 Reporte de Salud — {rd.usuario}
                 </div>
                 <div style={{ opacity: 0.85, fontSize: 'var(--text-sm)' }}>Generado el {rd.generado}</div>
               </div>
@@ -255,15 +255,15 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
           </div>
 
           <div className="section-grid">
-            {/* ââ  Biopedancia ââ */}
+            {/* ─�  Biopedancia ── */}
             {rd.bio_last && (
               <div className="card">
-                <div className="card-title">ð¬ Biopedancia actual <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>({rd.bio_last.fecha})</span></div>
+                <div className="card-title">🔬 Biopedancia actual <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>({rd.bio_last.fecha})</span></div>
                 <StatRow label="Peso"               value={rd.bio_last.peso}              unit=" kg" />
-                <StatRow label="IMC"                value={rd.bio_last.imc}               unit=" kg/mÂ²" />
+                <StatRow label="IMC"                value={rd.bio_last.imc}               unit=" kg/m²" />
                 <StatRow label="% Grasa"            value={rd.bio_last.porcentaje_grasa}  unit="%" />
                 <StatRow label="Masa grasa"         value={rd.bio_last.masa_grasa}        unit=" kg" />
-                <StatRow label="MÃºsculo esquelÃ©tico" value={rd.bio_last.masa_muscular_esqueletica} unit=" kg" />
+                <StatRow label="Músculo esquelético" value={rd.bio_last.masa_muscular_esqueletica} unit=" kg" />
                 <StatRow label="Agua corporal"      value={rd.bio_last.agua_corporal}     unit=" L" />
                 <StatRow label="Grasa visceral"     value={rd.bio_last.grasa_visceral}    unit="" />
                 <StatRow label="Metabolismo basal"  value={rd.bio_last.metabolismo_basal} unit=" kcal" />
@@ -271,12 +271,12 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
                 {rd.bio_first && rd.bio_first.fecha !== rd.bio_last.fecha && (
                   <div style={{ marginTop: 16, padding: '12px 14px', background: '#f0fdf4', borderRadius: 8 }}>
                     <div style={{ fontWeight: 700, fontSize: 12, color: '#166534', marginBottom: 8 }}>
-                      ð Cambios desde {rd.bio_first.fecha}
+                      📈 Cambios desde {rd.bio_first.fecha}
                     </div>
                     {[
                       ['Peso', rd.bio_last.peso, rd.bio_first.peso, 'kg', true],
                       ['% Grasa', rd.bio_last.porcentaje_grasa, rd.bio_first.porcentaje_grasa, '%', true],
-                      ['MÃºsculo', rd.bio_last.masa_muscular_esqueletica, rd.bio_first.masa_muscular_esqueletica, 'kg', false],
+                      ['Músculo', rd.bio_last.masa_muscular_esqueletica, rd.bio_first.masa_muscular_esqueletica, 'kg', false],
                     ].map(([label, curr, init, unit, lowerBetter]) => {
                       if (!curr || !init) return null
                       const diff = +(curr - init).toFixed(1)
@@ -295,12 +295,12 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
               </div>
             )}
 
-            {/* ââ Peso ââ */}
+            {/* ── Peso ── */}
             {rd.peso_last && (
               <div className="card">
-                <div className="card-title">âï¸ Peso y Medidas <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>({rd.peso_last.fecha})</span></div>
+                <div className="card-title">⚖️ Peso y Medidas <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>({rd.peso_last.fecha})</span></div>
                 <StatRow label="Peso"      value={rd.peso_last.peso}    unit=" kg" />
-                <StatRow label="IMC"       value={rd.peso_last.imc}     unit=" kg/mÂ²" />
+                <StatRow label="IMC"       value={rd.peso_last.imc}     unit=" kg/m²" />
                 <StatRow label="Cintura"   value={rd.peso_last.cintura} unit=" cm" />
                 <StatRow label="Cadera"    value={rd.peso_last.cadera}  unit=" cm" />
                 <StatRow label="Pecho"     value={rd.peso_last.pecho}   unit=" cm" />
@@ -308,7 +308,7 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
                 <StatRow label="Muslo D."  value={rd.peso_last.muslo_der} unit=" cm" />
                 {rd.peso_first && rd.peso_first.fecha !== rd.peso_last.fecha && rd.peso_first.peso && rd.peso_last.peso && (
                   <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: '#166534' }}>PÃ©rdida de peso total</span>
+                    <span style={{ fontSize: 13, color: '#166534' }}>Pérdida de peso total</span>
                     <span style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: '#16a34a' }}>
                       {(rd.peso_first.peso - rd.peso_last.peso).toFixed(1)}kg
                     </span>
@@ -317,71 +317,71 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
               </div>
             )}
 
-            {/* ââ NutriciÃ³n ââ */}
+            {/* ── Nutrición ── */}
             {rd.nut_prom_calorias && (
               <div className="card">
-                <div className="card-title">ð¥ NutriciÃ³n <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>(promedio 30 dÃ­as)</span></div>
-                <StatRow label="CalorÃ­as/dÃ­a"  value={rd.nut_prom_calorias}  unit=" kcal" />
-                <StatRow label="ProteÃ­nas/dÃ­a" value={rd.nut_prom_proteinas} unit=" g" />
-                <StatRow label="Carbs/dÃ­a"     value={rd.nut_prom_carbs}     unit=" g" />
-                <StatRow label="Grasas/dÃ­a"    value={rd.nut_prom_grasas}    unit=" g" />
+                <div className="card-title">🥗 Nutrición <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>(promedio 30 días)</span></div>
+                <StatRow label="Calorías/día"  value={rd.nut_prom_calorias}  unit=" kcal" />
+                <StatRow label="Proteínas/día" value={rd.nut_prom_proteinas} unit=" g" />
+                <StatRow label="Carbs/día"     value={rd.nut_prom_carbs}     unit=" g" />
+                <StatRow label="Grasas/día"    value={rd.nut_prom_grasas}    unit=" g" />
 
                 {rd.nut_prom_proteinas && rd.bio_last?.masa_muscular_esqueletica && (
                   <div style={{ marginTop: 12, padding: '10px 14px', background: '#fff7ed', borderRadius: 8, fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
-                    <strong>ProteÃ­na/kg mÃºsculo:</strong>{' '}
+                    <strong>Proteína/kg músculo:</strong>{' '}
                     {(rd.nut_prom_proteinas / rd.bio_last.masa_muscular_esqueletica).toFixed(1)}g/kg
-                    {' '}(objetivo â¥2.0g/kg para preservar mÃºsculo con tirzepatida)
+                    {' '}(objetivo ≥2.0g/kg para preservar músculo con tirzepatida)
                   </div>
                 )}
               </div>
             )}
 
-            {/* ââ Ejercicio ââ */}
+            {/* ── Ejercicio ── */}
             {rd.eje_sesiones > 0 && (
               <div className="card">
-                <div className="card-title">ð Ejercicio <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>(Ãºltimos 30 dÃ­as)</span></div>
+                <div className="card-title">🏃 Ejercicio <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>(últimos 30 días)</span></div>
                 <StatRow label="Sesiones"         value={rd.eje_sesiones}      unit="" />
-                <StatRow label="Promedio duraciÃ³n" value={rd.eje_prom_duracion} unit=" min" />
+                <StatRow label="Promedio duración" value={rd.eje_prom_duracion} unit=" min" />
                 <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, fontSize: 12, color: '#166534', lineHeight: 1.5 }}>
-                  {rd.eje_sesiones >= 12 ? 'â Excelente consistencia de ejercicio (â¥3x/semana)' :
-                   rd.eje_sesiones >= 8  ? 'ð Buen ritmo de ejercicio (2-3x/semana)' :
-                                           'â ï¸ Intenta aumentar la frecuencia a 3-4 sesiones/semana'}
+                  {rd.eje_sesiones >= 12 ? '✅ Excelente consistencia de ejercicio (≥3x/semana)' :
+                   rd.eje_sesiones >= 8  ? '👍 Buen ritmo de ejercicio (2-3x/semana)' :
+                                           '⚠️ Intenta aumentar la frecuencia a 3-4 sesiones/semana'}
                 </div>
               </div>
             )}
 
-            {/* ââ SueÃ±o ââ */}
+            {/* ── Sueño ── */}
             {rd.sue_count > 0 && (
               <div className="card">
-                <div className="card-title">ð SueÃ±o <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>(promedio 30 noches)</span></div>
-                <StatRow label="SueÃ±o total"  value={hhmm(rd.sue_prom_total)}    unit="" />
-                <StatRow label="SueÃ±o profundo" value={hhmm(rd.sue_prom_profundo)} unit="" />
-                <StatRow label="SueÃ±o REM"    value={hhmm(rd.sue_prom_rem)}      unit="" />
+                <div className="card-title">🌙 Sueño <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>(promedio 30 noches)</span></div>
+                <StatRow label="Sueño total"  value={hhmm(rd.sue_prom_total)}    unit="" />
+                <StatRow label="Sueño profundo" value={hhmm(rd.sue_prom_profundo)} unit="" />
+                <StatRow label="Sueño REM"    value={hhmm(rd.sue_prom_rem)}      unit="" />
                 <div style={{ marginTop: 12, padding: '10px 14px', background: (rd.sue_prom_total || 0) >= 7 ? '#f0fdf4' : '#fef2f2', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
                   color: (rd.sue_prom_total || 0) >= 7 ? '#166534' : '#991b1b' }}>
-                  {(rd.sue_prom_total || 0) >= 7 ? 'â Buen promedio de sueÃ±o (â¥7h)' :
-                   (rd.sue_prom_total || 0) >= 6 ? 'â ï¸ SueÃ±o en lÃ­mite inferior (6-7h)' :
-                                                    'â SueÃ±o insuficiente (<6h) â afecta pÃ©rdida de grasa'}
+                  {(rd.sue_prom_total || 0) >= 7 ? '✅ Buen promedio de sueño (≥7h)' :
+                   (rd.sue_prom_total || 0) >= 6 ? '⚠️ Sueño en límite inferior (6-7h)' :
+                                                    '❌ Sueño insuficiente (<6h) — afecta pérdida de grasa'}
                 </div>
               </div>
             )}
           </div>
 
-          {/* ââ AI Analysis ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+          {/* ── AI Analysis ──────────────────────────────────────────────────────── */}
           <div className="card" style={{ marginTop: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div className="card-title" style={{ margin: 0 }}>ð¤ AnÃ¡lisis de IA Personalizado</div>
+              <div className="card-title" style={{ margin: 0 }}>🤖 Análisis de IA Personalizado</div>
               {!aiLoading && aiAnalysis && (
                 <button onClick={() => generateAI(rd)}
                   style={{ fontSize: 'var(--text-xs)', color: 'var(--primary)', fontWeight: 500 }}>
-                  ð Regenerar
+                  🔄 Regenerar
                 </button>
               )}
             </div>
             {aiLoading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--primary)', padding: '8px 0' }}>
                 <div className="spinner" style={{ width: 20, height: 20 }} />
-                <span style={{ fontWeight: 500 }}>Generando anÃ¡lisis con IA (Groq)...</span>
+                <span style={{ fontWeight: 500 }}>Generando análisis con IA (Groq)...</span>
               </div>
             )}
             {!aiLoading && aiAnalysis && (
@@ -391,14 +391,14 @@ SÃ© especÃ­fico con los nÃºmeros. MÃ¡ximo 400 palabras total.`
             )}
           </div>
 
-          {/* ââ Print footer âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+          {/* ── Print footer ─────────────────────────────────────────────────────── */}
           <div style={{ marginTop: 24, padding: '16px 24px', background: 'var(--gray-50)', borderRadius: 12, fontSize: 12, color: 'var(--gray-400)', textAlign: 'center' }}>
-            Reporte generado por Health Tracker el {rd.generado} Â· Este anÃ¡lisis es informativo, no reemplaza la consulta mÃ©dica.
+            Reporte generado por Health Tracker el {rd.generado} · Este análisis es informativo, no reemplaza la consulta médica.
           </div>
         </div>
       )}
 
-      {/* âââ Print Styles âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+      {/* ─── Print Styles ─────────────────────────────────────────────────────── */}
       <style>{`
         @media print {
           .sidebar, .topbar, .page-header button, .btn-icon { display: none !important; }
