@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-// âââ Load SheetJS from CDN ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Load SheetJS from CDN ────────────────────────────────────────────────────
 function loadXLSX() {
   if (window.XLSX) return Promise.resolve(window.XLSX)
   return new Promise((resolve, reject) => {
@@ -15,7 +15,7 @@ function loadXLSX() {
   })
 }
 
-// âââ Sheet builders âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Sheet builders ───────────────────────────────────────────────────────────
 function makeSheet(XLSX, rows, headers) {
   if (!rows || rows.length === 0) {
     const ws = XLSX.utils.aoa_to_sheet([headers, ['Sin datos']])
@@ -36,7 +36,7 @@ export default function Exportar() {
   const [progress, setProgress] = useState('')
   const [counts, setCounts] = useState(null)
 
-  // âââ Count records on load âââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── Count records on load ─────────────────────────────────────────────────
   async function loadCounts() {
     setStatus('counting')
     const tables = [
@@ -45,7 +45,7 @@ export default function Exportar() {
       { key: 'tirz', table: 'tirzepatida_dosis',     label: 'Tirzepatida' },
       { key: 'ali',  table: 'alimentos',             label: 'Alimentos' },
       { key: 'eje',  table: 'ejercicios',            label: 'Ejercicios' },
-      { key: 'sue',  table: 'sleep_records',         label: 'SueÃ±o' },
+      { key: 'sue',  table: 'sleep_records',         label: 'Sueño' },
     ]
     const results = {}
     for (const t of tables) {
@@ -59,16 +59,16 @@ export default function Exportar() {
     setStatus('idle')
   }
 
-  // âââ Export all data âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── Export all data ───────────────────────────────────────────────────────
   async function exportAll() {
     setStatus('loading')
     try {
-      setProgress('Cargando librerÃ­a Excel...')
+      setProgress('Cargando librería Excel...')
       const XLSX = await loadXLSX()
 
       const wb = XLSX.utils.book_new()
 
-      // ââ 1. Biopedancia ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      // ── 1. Biopedancia ──────────────────────────────────────────────────────
       setProgress('Exportando biopedancia...')
       const { data: bio } = await supabase.from('bioimpedance_readings')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: true })
@@ -83,7 +83,7 @@ export default function Exportar() {
           n(r.grasa_pierna_der), n(r.grasa_pierna_izq),
           n(r.fuente), n(r.notas),
         ]),
-        ['Fecha','Peso(kg)','IMC','%Grasa','Masa Grasa','Masa Libre Grasa','MÃºsculo Esq.',
+        ['Fecha','Peso(kg)','IMC','%Grasa','Masa Grasa','Masa Libre Grasa','Músculo Esq.',
          'Agua(L)','Gr.Visceral','Meta.Basal','Peso Ideal',
          'Magra Brazo D','Magra Brazo I','Magra Tronco','Magra Pierna D','Magra Pierna I',
          'Grasa Brazo D','Grasa Brazo I','Grasa Tronco','Grasa Pierna D','Grasa Pierna I',
@@ -91,7 +91,7 @@ export default function Exportar() {
       )
       XLSX.utils.book_append_sheet(wb, bioSheet, 'Biopedancia')
 
-      // ââ 2. Peso y Medidas ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      // ── 2. Peso y Medidas ────────────────────────────────────────────────────
       setProgress('Exportando peso y medidas...')
       const { data: peso } = await supabase.from('peso_medidas')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: true })
@@ -106,7 +106,7 @@ export default function Exportar() {
       )
       XLSX.utils.book_append_sheet(wb, pesoSheet, 'Peso y Medidas')
 
-      // ââ 3. Tirzepatida ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      // ── 3. Tirzepatida ────────────────────────────────────────────────────────
       setProgress('Exportando tirzepatida...')
       const { data: tirz } = await supabase.from('tirzepatida_dosis')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: true })
@@ -119,7 +119,7 @@ export default function Exportar() {
       )
       XLSX.utils.book_append_sheet(wb, tirzSheet, 'Tirzepatida')
 
-      // ââ 4. Alimentos ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      // ── 4. Alimentos ──────────────────────────────────────────────────────────
       setProgress('Exportando alimentos...')
       const { data: ali } = await supabase.from('alimentos')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: true })
@@ -129,11 +129,11 @@ export default function Exportar() {
           n(r.proteinas_g), n(r.carbohidratos_g), n(r.grasas_g), n(r.fibra_g),
           n(r.tiempo_comida), n(r.notas),
         ]),
-        ['Fecha','Alimento','Cantidad(g)','CalorÃ­as','ProteÃ­nas(g)','Carbs(g)','Grasas(g)','Fibra(g)','Tiempo','Notas']
+        ['Fecha','Alimento','Cantidad(g)','Calorías','Proteínas(g)','Carbs(g)','Grasas(g)','Fibra(g)','Tiempo','Notas']
       )
       XLSX.utils.book_append_sheet(wb, aliSheet, 'Alimentos')
 
-      // ââ 5. Ejercicios âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      // ── 5. Ejercicios ─────────────────────────────────────────────────────────
       setProgress('Exportando ejercicios...')
       const { data: eje } = await supabase.from('ejercicios')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: true })
@@ -143,12 +143,12 @@ export default function Exportar() {
           n(r.series), n(r.repeticiones), n(r.peso_kg), n(r.distancia_km),
           n(r.calorias_quemadas), n(r.intensidad), n(r.notas),
         ]),
-        ['Fecha','Tipo','Ejercicio','DuraciÃ³n(min)','Series','Reps','Peso(kg)','Distancia(km)','CalorÃ­as','Intensidad','Notas']
+        ['Fecha','Tipo','Ejercicio','Duración(min)','Series','Reps','Peso(kg)','Distancia(km)','Calorías','Intensidad','Notas']
       )
       XLSX.utils.book_append_sheet(wb, ejeSheet, 'Ejercicios')
 
-      // ââ 6. SueÃ±o ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-      setProgress('Exportando sueÃ±o...')
+      // ── 6. Sueño ──────────────────────────────────────────────────────────────
+      setProgress('Exportando sueño...')
       const { data: sue } = await supabase.from('sleep_records')
         .select('*').eq('user_id', user.id).order('fecha', { ascending: true })
       const sueSheet = makeSheet(XLSX,
@@ -159,9 +159,9 @@ export default function Exportar() {
         ]),
         ['Fecha','Total(h)','Profundo(h)','REM(h)','Ligero(h)','En Cama(h)','Despierto(h)','Calidad(1-10)','Fuente','Notas']
       )
-      XLSX.utils.book_append_sheet(wb, sueSheet, 'SueÃ±o')
+      XLSX.utils.book_append_sheet(wb, sueSheet, 'Sueño')
 
-      // ââ Download âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+      // ── Download ───────────────────────────────────────────────────────────────
       setProgress('Generando archivo...')
       const dateStr = format(new Date(), 'yyyy-MM-dd')
       XLSX.writeFile(wb, `health-tracker-${dateStr}.xlsx`)
@@ -177,22 +177,22 @@ export default function Exportar() {
   return (
     <div>
       <div className="page-header">
-        <h1>ð¥ Exportar Datos</h1>
-        <p>Descarga todos tus datos como archivo Excel con mÃºltiples hojas</p>
+        <h1>📥 Exportar Datos</h1>
+        <p>Descarga todos tus datos como archivo Excel con múltiples hojas</p>
       </div>
 
       {/* Main export card */}
       <div className="card" style={{ marginBottom: 24, maxWidth: 640 }}>
-        <div className="card-title">ð Exportar todo en un archivo Excel</div>
+        <div className="card-title">📊 Exportar todo en un archivo Excel</div>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)', marginBottom: 20, lineHeight: 1.6 }}>
           Genera un archivo <strong>.xlsx</strong> con 6 hojas: Biopedancia, Peso y Medidas,
-          Tirzepatida, Alimentos, Ejercicios y SueÃ±o. Incluye todos tus registros histÃ³ricos.
+          Tirzepatida, Alimentos, Ejercicios y Sueño. Incluye todos tus registros históricos.
         </p>
 
         {status === 'idle' && !counts && (
           <div style={{ display: 'flex', gap: 12 }}>
             <button className="btn-primary" onClick={exportAll}>
-              â¬ï¸ Descargar Excel completo
+              ⬇️ Descargar Excel completo
             </button>
             <button onClick={loadCounts}
               style={{ color: 'var(--primary)', fontSize: 'var(--text-sm)', fontWeight: 500 }}>
@@ -202,7 +202,7 @@ export default function Exportar() {
         )}
 
         {status === 'counting' && (
-          <div style={{ color: 'var(--gray-500)', fontSize: 'var(--text-sm)' }}>â³ Contando registros...</div>
+          <div style={{ color: 'var(--gray-500)', fontSize: 'var(--text-sm)' }}>⏳ Contando registros...</div>
         )}
 
         {status === 'loading' && (
@@ -215,17 +215,17 @@ export default function Exportar() {
         {status === 'done' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="form-success" style={{ margin: 0 }}>
-              â Excel descargado correctamente.
+              ✅ Excel descargado correctamente.
             </div>
             <button className="btn-primary" onClick={() => { setStatus('idle'); setProgress('') }}>
-              â¬ï¸ Descargar de nuevo
+              ⬇️ Descargar de nuevo
             </button>
           </div>
         )}
 
         {status === 'error' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="form-error" style={{ margin: 0 }}>â {progress}</div>
+            <div className="form-error" style={{ margin: 0 }}>❌ {progress}</div>
             <button className="btn-primary" onClick={() => { setStatus('idle'); setProgress('') }}>
               Reintentar
             </button>
@@ -244,7 +244,7 @@ export default function Exportar() {
               ))}
             </div>
             <button className="btn-primary" onClick={exportAll}>
-              â¬ï¸ Descargar Excel ({Object.values(counts).reduce((s, { count }) => s + count, 0)} registros)
+              ⬇️ Descargar Excel ({Object.values(counts).reduce((s, { count }) => s + count, 0)} registros)
             </button>
           </>
         )}
@@ -253,15 +253,15 @@ export default function Exportar() {
       {/* Info cards */}
       <div className="section-grid">
         <div className="card">
-          <div className="card-title">ð Â¿QuÃ© incluye el Excel?</div>
+          <div className="card-title">📋 ¿Qué incluye el Excel?</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
-              ['ð Biopedancia', 'ComposiciÃ³n corporal, datos segmentales, fechas'],
-              ['âï¸ Peso y Medidas', 'Peso, IMC, circunferencias corporales'],
-              ['ð Tirzepatida', 'Dosis, horarios, zonas de inyecciÃ³n, reacciones'],
-              ['ð Alimentos', 'Macros, calorÃ­as, tiempos de comida'],
-              ['ð Ejercicios', 'Series, repeticiones, duraciÃ³n, intensidad'],
-              ['ð SueÃ±o', 'Fases, duraciÃ³n, calidad, fuente'],
+              ['📊 Biopedancia', 'Composición corporal, datos segmentales, fechas'],
+              ['⚖️ Peso y Medidas', 'Peso, IMC, circunferencias corporales'],
+              ['💉 Tirzepatida', 'Dosis, horarios, zonas de inyección, reacciones'],
+              ['🛒 Alimentos', 'Macros, calorías, tiempos de comida'],
+              ['🏃 Ejercicios', 'Series, repeticiones, duración, intensidad'],
+              ['🌙 Sueño', 'Fases, duración, calidad, fuente'],
             ].map(([title, desc]) => (
               <div key={title} style={{ padding: '10px 12px', background: 'var(--gray-50)', borderRadius: 8 }}>
                 <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 2 }}>{title}</div>
@@ -272,22 +272,22 @@ export default function Exportar() {
         </div>
 
         <div className="card">
-          <div className="card-title">ð¡ Consejos</div>
+          <div className="card-title">💡 Consejos</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 'var(--text-sm)', color: 'var(--gray-700)', lineHeight: 1.6 }}>
             <p>
-              ð± <strong>Google Sheets:</strong> Abre el .xlsx directamente en Google Sheets para
+              📱 <strong>Google Sheets:</strong> Abre el .xlsx directamente en Google Sheets para
               visualizar y compartir tus datos desde cualquier dispositivo.
             </p>
             <p>
-              ð <strong>AnÃ¡lisis propio:</strong> Usa las columnas de macros y biopedancia para
-              identificar correlaciones entre alimentaciÃ³n y composiciÃ³n corporal.
+              📈 <strong>Análisis propio:</strong> Usa las columnas de macros y biopedancia para
+              identificar correlaciones entre alimentación y composición corporal.
             </p>
             <p>
-              ð©º <strong>Para tu mÃ©dico:</strong> Exporta y muestra el historial completo de
-              biopedancias a tu endocrinÃ³logo para ajustar el tratamiento con tirzepatida.
+              🩺 <strong>Para tu médico:</strong> Exporta y muestra el historial completo de
+              biopedancias a tu endocrinólogo para ajustar el tratamiento con tirzepatida.
             </p>
             <p>
-              ð <strong>Exporta regularmente:</strong> Guarda una copia mensual como respaldo
+              🔄 <strong>Exporta regularmente:</strong> Guarda una copia mensual como respaldo
               de seguridad de tu progreso.
             </p>
           </div>
