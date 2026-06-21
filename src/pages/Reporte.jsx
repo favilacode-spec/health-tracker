@@ -17,7 +17,7 @@ function StatRow({ label, value, unit = '' }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
       <span style={{ color: '#64748b', fontSize: 13 }}>{label}</span>
-      <span style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>{value ? `${value}${unit}` : '—'}|/span>
+      <span style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>{value ? `${value}${unit}` : '—'}</span>
     </div>
   )
 }
@@ -233,7 +233,7 @@ Sé específico con los números. Máximo 400 palabras total.`
         </div>
       )}
 
-      {/* ── REPORT ──────────────────────────────────────────────────────────── */}
+      {/* ─── REPORT ──────────────────────────────────────────────────────────── */}
       {status === 'done' && rd && (
         <div id="reporte-contenido">
           {/* Header */}
@@ -255,7 +255,7 @@ Sé específico con los números. Máximo 400 palabras total.`
           </div>
 
           <div className="section-grid">
-            {/* ─�  Biopedancia ── */}
+            {/* ── Biopedancia ── */}
             {rd.bio_last && (
               <div className="card">
                 <div className="card-title">🔬 Biopedancia actual <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>({rd.bio_last.fecha})</span></div>
