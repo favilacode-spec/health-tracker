@@ -7,7 +7,6 @@ import Peso from './pages/Peso'
 import Biopedancia from './pages/Biopedancia'
 import Tirzepatida from './pages/Tirzepatida'
 import Nutricion from './pages/Nutricion'
-import NutricionIA from './pages/NutricionIA'
 import Ejercicio from './pages/Ejercicio'
 import Alimentacion from './pages/Alimentacion'
 import Perfil from './pages/Perfil'
@@ -34,7 +33,6 @@ function AppRoutes() {
       <Route path="/biopedancia"   element={<ProtectedRoute><Biopedancia /></ProtectedRoute>} />
       <Route path="/tirzepatida"   element={<ProtectedRoute><Tirzepatida /></ProtectedRoute>} />
       <Route path="/nutricion"     element={<ProtectedRoute><Nutricion /></ProtectedRoute>} />
-      <Route path="/nutricion-ia"  element={<ProtectedRoute><NutricionIA /></ProtectedRoute>} />
       <Route path="/ejercicio"     element={<ProtectedRoute><Ejercicio /></ProtectedRoute>} />
       <Route path="/alimentacion"  element={<ProtectedRoute><Alimentacion /></ProtectedRoute>} />
       <Route path="/sueno"         element={<ProtectedRoute><Sueno /></ProtectedRoute>} />
