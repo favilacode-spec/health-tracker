@@ -41,7 +41,7 @@ export default function Sakura() {
             opacity:           p.opacity,
             background: p.isGold
               ? 'radial-gradient(circle at 30% 30%, rgba(255,215,60,0.95), rgba(201,162,39,0.4))'
-              : 'radial-gradient(circle at 30% 30%, rgba(220,70,80,0.95), rgba(170,30,40,0.35))',
+              : 'radial-gradient(circle at 30% 30%, rgba(245,235,200,0.88), rgba(210,185,130,0.28))',
             '--drift':     `${p.drift}px`,
             '--rot-start': `${p.rotStart}deg`,
           }}

@@ -38,17 +38,17 @@ const toolItems = [
 function ToriiLogo() {
   return (
     <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Top crossbeam — gold */}
-      <rect x="1" y="5" width="32" height="3.5" rx="1.75" fill="#c9a227" />
-      {/* Second crossbeam — red */}
-      <rect x="5" y="11" width="24" height="2.8" rx="1.4" fill="#c0383f" />
+      {/* Top crossbeam — bright gold */}
+      <rect x="1" y="5" width="32" height="3.5" rx="1.75" fill="#e8c84a" />
+      {/* Second crossbeam — deep gold */}
+      <rect x="5" y="11" width="24" height="2.8" rx="1.4" fill="#c9a227" />
       {/* Left pillar */}
-      <rect x="7" y="13.8" width="3.2" height="19" rx="1.6" fill="#c0383f" />
+      <rect x="7" y="13.8" width="3.2" height="19" rx="1.6" fill="#c9a227" />
       {/* Right pillar */}
-      <rect x="23.8" y="13.8" width="3.2" height="19" rx="1.6" fill="#c0383f" />
-      {/* Cap ends on top beam */}
-      <rect x="0" y="3.5" width="5" height="5" rx="2.5" fill="#c9a227" opacity="0.9" />
-      <rect x="29" y="3.5" width="5" height="5" rx="2.5" fill="#c9a227" opacity="0.9" />
+      <rect x="23.8" y="13.8" width="3.2" height="19" rx="1.6" fill="#c9a227" />
+      {/* Cap ends on top beam — white */}
+      <rect x="0" y="3.5" width="5" height="5" rx="2.5" fill="#ede8e0" opacity="0.9" />
+      <rect x="29" y="3.5" width="5" height="5" rx="2.5" fill="#ede8e0" opacity="0.9" />
       {/* Glow dot center */}
       <circle cx="17" cy="6.75" r="1.2" fill="rgba(255,255,255,0.3)" />
     </svg>
