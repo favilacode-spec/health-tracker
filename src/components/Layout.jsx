@@ -14,8 +14,9 @@ const navItems = [
 ]
 
 const toolItems = [
-  { to: '/exportar', icon: '📥', label: 'Exportar' },
-  { to: '/reporte',  icon: '📋', label: 'Reporte IA' },
+  { to: '/nutricion-ia', icon: '🤖', label: 'IA Nutricional' },
+  { to: '/exportar',     icon: '📥', label: 'Exportar' },
+  { to: '/reporte',      icon: '📋', label: 'Reporte IA' },
 ]
 
 export default function Layout({ children }) {
