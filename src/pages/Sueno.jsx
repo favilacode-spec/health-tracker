@@ -86,26 +86,15 @@ function SleepBar({ value, max, color, label }) {
   )
 }
 
-const EMPTY_FORM = {
-  fecha: format(new Date(), 'yyyy-MM-dd'),
-  hora_inicio: '', hora_fin: '',
-  duracion_rem: '', duracion_profundo: '', duracion_ligero: '',
-  duracion_en_cama: '', duracion_despierto: '',
-  calidad: '', notas: '',
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Sueno() {
   const { user } = useAuth()
   const [tab, setTab]               = useState('registrar')
   const [records, setRecords]       = useState([])
-  const [form, setForm]             = useState(EMPTY_FORM)
   const [xmlState, setXmlState]     = useState('idle')
   const [xmlMsg, setXmlMsg]         = useState('')
   const [msg, setMsg]               = useState({ type: '', text: '' })
   const fileRef = useRef()
-
-  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   function showMsg(type, text) {
     setMsg({ type, text })
@@ -164,41 +153,6 @@ export default function Sueno() {
     }
   }
 
-  // ─── Manual save ────────────────────────────────────────────────────────────
-  async function saveRecord(e) {
-    e.preventDefault()
-    const stages = ['duracion_rem','duracion_profundo','duracion_ligero']
-    const sumStages = stages.reduce((s, k) => s + (parseFloat(form[k]) || 0), 0)
-
-    let total = sumStages || null
-    if (!total && form.hora_inicio && form.hora_fin) {
-      const d = (new Date(`${form.fecha}T${form.hora_fin}`) - new Date(`${form.fecha}T${form.hora_inicio}`)) / 3600000
-      if (d > 0 && d < 24) total = +d.toFixed(2)
-    }
-
-    const payload = {
-      user_id: user.id,
-      fecha: form.fecha,
-      hora_inicio:       form.hora_inicio ? new Date(`${form.fecha}T${form.hora_inicio}`).toISOString() : null,
-      hora_fin:          form.hora_fin    ? new Date(`${form.fecha}T${form.hora_fin}`).toISOString()    : null,
-      duracion_total:    total,
-      duracion_rem:      parseFloat(form.duracion_rem)       || null,
-      duracion_profundo: parseFloat(form.duracion_profundo)  || null,
-      duracion_ligero:   parseFloat(form.duracion_ligero)    || null,
-      duracion_en_cama:  parseFloat(form.duracion_en_cama)   || null,
-      duracion_despierto:parseFloat(form.duracion_despierto) || null,
-      calidad:           form.calidad ? parseInt(form.calidad) : null,
-      notas:             form.notas || null,
-      fuente: 'manual',
-    }
-
-    const { error } = await supabase.from('sleep_records').insert(payload)
-    if (error) { showMsg('error', '❌ ' + error.message); return }
-    showMsg('success', '✅ Noche guardada')
-    setForm(EMPTY_FORM)
-    loadRecords()
-  }
-
   async function deleteRecord(id) {
     await supabase.from('sleep_records').delete().eq('id', id)
     loadRecords()
@@ -223,7 +177,7 @@ export default function Sueno() {
     <div>
       <div className="page-header">
         <h1>🌙 Sueño</h1>
-        <p>Importa Apple Health o registra manualmente — tirzepatida mejora el sueño al reducir apnea y grasa visceral</p>
+        <p>Importá tu Apple Health — tirzepatida mejora el sueño al reducir apnea y grasa visceral</p>
       </div>
 
       {/* KPIs */}
@@ -313,69 +267,13 @@ export default function Sueno() {
             </div>
           </div>
 
-          {/* Manual Entry */}
-          <div className="card">
-            <div className="card-title">📝 Registro manual</div>
-            <form onSubmit={saveRecord}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
-                <div className="form-group">
-                  <label>Fecha</label>
-                  <input type="date" value={form.fecha} onChange={e => setF('fecha', e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>Me dormí a</label>
-                  <input type="time" value={form.hora_inicio} onChange={e => setF('hora_inicio', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Me desperté a</label>
-                  <input type="time" value={form.hora_fin} onChange={e => setF('hora_fin', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Calidad <span style={{ color: 'var(--gray-400)', fontSize: 11 }}>(1-10)</span></label>
-                  <input type="number" min="1" max="10" value={form.calidad}
-                    onChange={e => setF('calidad', e.target.value)} placeholder="7" />
-                </div>
-              </div>
-
-              <div style={{ fontWeight: 600, color: 'var(--gray-600)', fontSize: 'var(--text-sm)', marginBottom: 12 }}>
-                ⏱ Fases de sueño en horas (opcional — Apple Watch las detecta automáticamente)
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
-                {[
-                  { k: 'duracion_rem',        l: '🧠 REM' },
-                  { k: 'duracion_profundo',    l: '💪 Profundo' },
-                  { k: 'duracion_ligero',      l: '💤 Ligero' },
-                  { k: 'duracion_en_cama',     l: '🛏 En cama' },
-                  { k: 'duracion_despierto',   l: '👁 Despierto' },
-                ].map(f => (
-                  <div className="form-group" key={f.k}>
-                    <label style={{ fontSize: 11 }}>{f.l}</label>
-                    <input type="number" step="0.25" min="0" max="12" value={form[f.k]}
-                      onChange={e => setF(f.k, e.target.value)} placeholder="0.0" />
-                  </div>
-                ))}
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 20 }}>
-                <label>Notas</label>
-                <textarea value={form.notas} onChange={e => setF('notas', e.target.value)}
-                  placeholder="¿Sueño reparador? ¿Veces que te despertaste?..." />
-              </div>
-
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <button type="submit" className="btn-primary">💾 Guardar noche</button>
-                <button type="button" onClick={() => setForm(EMPTY_FORM)}
-                  style={{ color: 'var(--gray-500)', fontSize: 'var(--text-sm)' }}>Limpiar</button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
 
       {/* ═══ HISTORIAL ═══════════════════════════════════════════════════════════ */}
       {tab === 'historial' && (
         records.length === 0
-          ? <div className="empty-state card"><div className="empty-state-icon">🌙</div><p>No hay noches registradas aún. Importa tu Apple Health o agrega una manualmente.</p></div>
+          ? <div className="empty-state card"><div className="empty-state-icon">🌙</div><p>No hay noches registradas aún. Importá tu Apple Health desde la pestaña Registrar.</p></div>
           : (
             <div className="card">
               <div className="card-title">📋 Historial ({records.length} noches)</div>
