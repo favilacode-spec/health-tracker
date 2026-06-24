@@ -262,7 +262,7 @@ export default function Nutricion() {
                       background: mealForm.meal_type === mt.id ? 'var(--primary-light)' : 'var(--bg-elevated)',
                       color: mealForm.meal_type === mt.id ? 'var(--primary)' : 'var(--text-secondary)',
                     }}>
-                    {mt.icon} {mt.label}
+                    <span className="emoji-bw">{mt.icon}</span> {mt.label}
                   </button>
                 ))}
               </div>
@@ -308,7 +308,7 @@ export default function Nutricion() {
               mealsByType.filter(mt => mt.meals.length > 0).map(mt => (
                 <div key={mt.id} style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                    {mt.icon} {mt.label}
+                    <span className="emoji-bw">{mt.icon}</span> {mt.label}
                   </div>
                   {mt.meals.map(meal => (
                     <div key={meal.id} style={{

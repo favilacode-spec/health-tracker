@@ -293,12 +293,14 @@ export default function Alimentacion() {
 
       <div className="tabs-bar">
         {[
-          ['lista', '🛒 Lista de compras'],
-          ['recomendados', '⭐ Alimentos'],
-          ['recetas', '👨‍🍳 Recetas'],
-          ['consejos', '💡 Consejos'],
-        ].map(([k, l]) => (
-          <button key={k} className={`tab-btn ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</button>
+          ['lista',        '🛒', 'Lista de compras'],
+          ['recomendados', '⭐', 'Alimentos'],
+          ['recetas',      '👨‍🍳', 'Recetas'],
+          ['consejos',     '💡', 'Consejos'],
+        ].map(([k, e, l]) => (
+          <button key={k} className={`tab-btn ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>
+            <span className="emoji-bw">{e}</span> {l}
+          </button>
         ))}
       </div>
 
@@ -416,17 +418,20 @@ export default function Alimentacion() {
       {tab === 'recomendados' && (
         <div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
-            {['Todas', ...FOOD_CATEGORIES].map(cat => (
-              <button key={cat} onClick={() => setFilterCat(cat)}
-                style={{
-                  padding: '5px 12px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600,
-                  border: filterCat === cat ? '1.5px solid var(--primary)' : '1.5px solid var(--border-bright)',
-                  background: filterCat === cat ? 'var(--primary-light)' : 'var(--bg-elevated)',
-                  color: filterCat === cat ? 'var(--primary)' : 'var(--text-secondary)',
-                }}>
-                {cat}
-              </button>
-            ))}
+            {['Todas', ...FOOD_CATEGORIES].map(cat => {
+              const [em, ...rest] = cat.includes(' ') ? cat.split(' ') : [null, cat]
+              return (
+                <button key={cat} onClick={() => setFilterCat(cat)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600,
+                    border: filterCat === cat ? '1.5px solid var(--primary)' : '1.5px solid var(--border-bright)',
+                    background: filterCat === cat ? 'var(--primary-light)' : 'var(--bg-elevated)',
+                    color: filterCat === cat ? 'var(--primary)' : 'var(--text-secondary)',
+                  }}>
+                  {em ? <><span className="emoji-bw">{em}</span> {rest.join(' ')}</> : cat}
+                </button>
+              )
+            })}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 10 }}>
             {RECOMMENDED_FOODS.filter(f => filterCat === 'Todas' || f.cat === filterCat).map(food => (
@@ -479,7 +484,7 @@ export default function Alimentacion() {
                 <button
                   style={{ width: '100%', padding: '14px 16px', textAlign: 'left', display: 'flex', gap: 12, alignItems: 'flex-start' }}
                   onClick={() => setExpandedRecipe(expandedRecipe === i ? null : i)}>
-                  <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{recipe.emoji}</span>
+                  <span className="emoji-bw" style={{ fontSize: '1.5rem', flexShrink: 0 }}>{recipe.emoji}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-primary)', marginBottom: 4 }}>{recipe.name}</div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -549,7 +554,7 @@ export default function Alimentacion() {
                 padding: 18, borderRadius: 'var(--radius)', border: '1px solid var(--border)',
                 background: 'var(--bg-card)',
               }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>{tip.icon}</div>
+                <div className="emoji-bw" style={{ fontSize: '1.5rem', marginBottom: 8 }}>{tip.icon}</div>
                 <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', marginBottom: 6, color: 'var(--text-primary)' }}>{tip.title}</div>
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', lineHeight: 1.7 }}>{tip.text}</div>
               </div>

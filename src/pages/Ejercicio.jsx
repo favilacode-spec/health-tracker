@@ -483,7 +483,7 @@ export default function Ejercicio() {
                 return (
                   <div key={ex.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--gray-100)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: '1.5rem' }}>{type?.icon || '🏅'}</span>
+                      <span className="emoji-bw" style={{ fontSize: '1.5rem' }}>{type?.icon || '🏅'}</span>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{type?.label || ex.exercise_type}</div>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
