@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    ZENSHIN  前進  — Design System v3.0
    武士道 × 禅  |  Bushido × Zen
-   Black · Crimson · Imperial Gold
+   Black · Imperial Gold · White
 ═══════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;600&display=swap');
@@ -16,17 +16,17 @@
   --bg-input:    #080810;
   --bg-overlay:  rgba(5, 5, 8, 0.94);
 
-  /* Primary – katana red · 緋色 */
-  --primary:       #c0383f;
-  --primary-dark:  #800010;
-  --primary-light: rgba(192, 56, 63, 0.13);
-  --primary-glow:  rgba(192, 56, 63, 0.4);
+  /* Primary – imperial gold · 金色 */
+  --primary:       #c9a227;
+  --primary-dark:  #8b6510;
+  --primary-light: rgba(201, 162, 39, 0.13);
+  --primary-glow:  rgba(201, 162, 39, 0.4);
 
-  /* Secondary – imperial gold · 金色 */
-  --secondary:       #c9a227;
-  --secondary-dark:  #8b6510;
-  --secondary-light: rgba(201, 162, 39, 0.13);
-  --secondary-glow:  rgba(201, 162, 39, 0.35);
+  /* Secondary – bright champagne gold · 淡金色 */
+  --secondary:       #e8c84a;
+  --secondary-dark:  #b89030;
+  --secondary-light: rgba(232, 200, 74, 0.13);
+  --secondary-glow:  rgba(232, 200, 74, 0.35);
 
   /* Text – warm washi paper */
   --text-primary:   #ede8e0;
@@ -36,7 +36,7 @@
   /* Borders */
   --border:        #161208;
   --border-bright: #26200e;
-  --border-red:    rgba(192, 56, 63, 0.3);
+  --border-red:    rgba(201, 162, 39, 0.3);
   --border-gold:   rgba(201, 162, 39, 0.3);
 
   /* Radius */
@@ -46,7 +46,7 @@
 
   /* Shadows */
   --shadow-card:  0 4px 28px rgba(0, 0, 0, 0.5);
-  --shadow-red:   0 8px 40px rgba(192, 56, 63, 0.28);
+  --shadow-red:   0 8px 40px rgba(201, 162, 39, 0.28);
   --shadow-gold:  0 8px 40px rgba(201, 162, 39, 0.22);
   --shadow-hover: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px var(--border-red);
 
@@ -294,13 +294,13 @@ ul, ol { list-style: none; }
 
 .nav-item:hover:not(.nav-item-active):not(.nav-item-logout) {
   color: var(--text-primary);
-  background: rgba(192, 56, 63, 0.07);
-  border-left-color: rgba(192, 56, 63, 0.35);
+  background: rgba(201, 162, 39, 0.07);
+  border-left-color: rgba(201, 162, 39, 0.35);
 }
 
 .nav-item-active {
   color: var(--text-primary);
-  background: linear-gradient(90deg, rgba(192,56,63,0.18) 0%, rgba(192,56,63,0.04) 70%, transparent 100%);
+  background: linear-gradient(90deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.04) 70%, transparent 100%);
   border-left: 2px solid var(--primary);
   font-weight: 500;
 }
@@ -414,7 +414,7 @@ ul, ol { list-style: none; }
   font-size: 190px;
   font-weight: 800;
   color: transparent;
-  background: linear-gradient(180deg, rgba(192,56,63,0.08) 0%, rgba(201,162,39,0.05) 100%);
+  background: linear-gradient(180deg, rgba(201,162,39,0.08) 0%, rgba(201,162,39,0.05) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   pointer-events: none;
@@ -580,8 +580,8 @@ ul, ol { list-style: none; }
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #d04048 0%, #9a0010 100%);
-  box-shadow: 0 4px 22px var(--primary-glow), 0 0 0 1px rgba(192,56,63,0.4);
+  background: linear-gradient(135deg, #d4b030 0%, #9a7820 100%);
+  box-shadow: 0 4px 22px var(--primary-glow), 0 0 0 1px rgba(201,162,39,0.4);
   transform: translateY(-1px);
 }
 .btn-primary:hover::before { animation: blade-flash 0.4s ease forwards; }
@@ -628,7 +628,7 @@ ul, ol { list-style: none; }
   justify-content: center;
   gap: 6px;
   padding: 8px 16px;
-  background: rgba(192,56,63,0.1);
+  background: rgba(201,162,39,0.1);
   color: var(--primary);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -700,7 +700,7 @@ input[type="checkbox"] {
 }
 
 .form-error {
-  background: rgba(192,56,63,0.08);
+  background: rgba(201,162,39,0.08);
   border: 1px solid var(--border-red);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
@@ -769,10 +769,10 @@ input[type="checkbox"] {
   transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.tab-btn:hover { color: var(--text-primary); background: rgba(192,56,63,0.07); }
+.tab-btn:hover { color: var(--text-primary); background: rgba(201,162,39,0.07); }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, rgba(192,56,63,0.14), rgba(201,162,39,0.07));
+  background: linear-gradient(135deg, rgba(201,162,39,0.14), rgba(201,162,39,0.07));
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -793,7 +793,7 @@ input[type="checkbox"] {
   transition: var(--transition);
 }
 .shopping-item:last-child { border-bottom: none; }
-.shopping-item:hover { background: rgba(192,56,63,0.03); border-radius: var(--radius-sm); padding: 8px 6px; }
+.shopping-item:hover { background: rgba(201,162,39,0.03); border-radius: var(--radius-sm); padding: 8px 6px; }
 
 .shopping-item-name { flex: 1; font-size: var(--text-sm); color: var(--text-primary); transition: var(--transition); }
 .shopping-item-name.checked { text-decoration: line-through; color: var(--text-muted); }
@@ -846,9 +846,9 @@ input[type="checkbox"] {
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   background:
-    radial-gradient(ellipse at top left,     rgba(192,56,63,0.2)  0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(201,162,39,0.1) 0%, transparent 50%),
-    linear-gradient(160deg, #0a0308 0%, #050508 50%, #080600 100%);
+    radial-gradient(ellipse at top left,     rgba(201,162,39,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(232,200,74,0.09) 0%, transparent 50%),
+    linear-gradient(160deg, #050508 0%, #050508 50%, #070600 100%);
   padding: 24px;
   position: relative;
   overflow: hidden;
@@ -861,7 +861,7 @@ input[type="checkbox"] {
   font-family: var(--font-kanji);
   font-size: 320px;
   font-weight: 800;
-  color: rgba(192,56,63,0.04);
+  color: rgba(201,162,39,0.04);
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none; user-select: none; line-height: 1;
@@ -875,7 +875,7 @@ input[type="checkbox"] {
   width: 100%; max-width: 400px;
   animation: card-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative; overflow: hidden;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(192,56,63,0.1);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,162,39,0.1);
 }
 
 .login-card::before {
