@@ -84,6 +84,15 @@
   --gray-700: #9a8660;
   --gray-800: #c8b080;
   --gray-900: #ede8e0;
+
+  /* Semantic aliases — all mapped to gold/cream palette (no red/green/blue) */
+  --accent:       #c9a227;
+  --accent-light: rgba(201, 162, 39, 0.08);
+  --danger:       #ede8e0;              /* cream — urgency without red */
+  --danger-light: rgba(201, 162, 39, 0.06);
+  --info:         #9a8660;              /* muted gold-gray */
+  --success:      #e8c84a;             /* champagne gold */
+  --success-light: rgba(232, 200, 74, 0.08);
 }
 
 /* ─── ANIMATIONS / KEYFRAMES ─────────────────────────────── */
@@ -696,11 +705,11 @@ input[type="checkbox"] {
 }
 
 .form-success {
-  background: rgba(34,197,94,0.07);
-  border: 1px solid rgba(34,197,94,0.22);
+  background: rgba(201,162,39,0.07);
+  border: 1px solid var(--border-gold);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
-  color: #4ade80;
+  color: var(--secondary);
   font-size: var(--text-sm);
   animation: fade-in-down 0.3s ease;
 }
@@ -710,7 +719,7 @@ input[type="checkbox"] {
   border: 1px solid var(--border-red);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
-  color: #f87171;
+  color: var(--text-primary);
   font-size: var(--text-sm);
   animation: fade-in-down 0.3s ease;
 }
@@ -728,11 +737,11 @@ input[type="checkbox"] {
   line-height: 1.4;
 }
 
-.badge-gray    { background: rgba(255,255,255,0.05); color: var(--text-muted);  border: 1px solid var(--border-bright); }
-.badge-success { background: rgba(34,197,94,0.1);   color: #4ade80;            border: 1px solid rgba(34,197,94,0.2); }
-.badge-danger  { background: var(--primary-light);   color: #f87171;            border: 1px solid var(--border-red); }
-.badge-warning { background: var(--secondary-light); color: var(--secondary);   border: 1px solid var(--border-gold); }
-.badge-info    { background: rgba(59,130,246,0.1);   color: #60a5fa;            border: 1px solid rgba(59,130,246,0.2); }
+.badge-gray    { background: rgba(255,255,255,0.05); color: var(--text-muted);    border: 1px solid var(--border-bright); }
+.badge-success { background: var(--secondary-light); color: var(--secondary);    border: 1px solid rgba(232,200,74,0.25); }
+.badge-danger  { background: var(--primary-light);   color: var(--text-primary); border: 1px solid var(--border-gold); }
+.badge-warning { background: var(--secondary-light); color: var(--secondary);    border: 1px solid var(--border-gold); }
+.badge-info    { background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border-bright); }
 
 /* ─── TABS ───────────────────────────────────────────────── */
 .tabs-bar {
@@ -786,10 +795,27 @@ input[type="checkbox"] {
 
 /* ─── ALERTS ─────────────────────────────────────────────── */
 .alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: var(--text-sm); margin-bottom: 14px; animation: fade-in-down 0.3s ease; }
-.alert-warning { background: rgba(201,162,39,0.08); border: 1px solid var(--border-gold); color: var(--secondary); }
-.alert-info    { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #60a5fa; }
-.alert-success { background: rgba(34,197,94,0.07);  border: 1px solid rgba(34,197,94,0.22); color: #4ade80; }
-.alert-danger  { background: var(--primary-light);  border: 1px solid var(--border-red);    color: #f87171; }
+.alert-warning { background: rgba(201,162,39,0.08); border: 1px solid var(--border-gold);   color: var(--secondary); }
+.alert-info    { background: rgba(255,255,255,0.03); border: 1px solid var(--border-bright); color: var(--text-secondary); }
+.alert-success { background: rgba(232,200,74,0.07); border: 1px solid rgba(232,200,74,0.22); color: var(--secondary); }
+.alert-danger  { background: var(--primary-light);  border: 1px solid var(--border-red);    color: var(--text-primary); }
+
+/* ─── PROGRESS BARS ─────────────────────────────────────── */
+.progress-bar-container {
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--border-bright);
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: var(--radius-full);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* .green class no longer produces green — all fills are gold */
+.progress-bar-fill.green { background: linear-gradient(90deg, var(--primary), var(--secondary)); }
 
 /* ─── SHOPPING LIST ──────────────────────────────────────── */
 .shopping-item {
