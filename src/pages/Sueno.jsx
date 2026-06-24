@@ -79,7 +79,7 @@ function SleepBar({ value, max, color, label }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray-600)', marginBottom: 4 }}>
         <span>{label}</span><span style={{ fontWeight: 600 }}>{hhmm(value)}</span>
       </div>
-      <div style={{ height: 8, background: 'var(--gray-100)', borderRadius: 4, overflow: 'hidden' }}>
+      <div style={{ height: 8, background: 'var(--bg-elevated)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border-bright)' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width 0.6s ease' }} />
       </div>
     </div>
@@ -396,14 +396,14 @@ export default function Sueno() {
                                : (r.duracion_total||0) >= 6 ? 'var(--accent)'
                                : 'var(--danger)'
                         }}>{hhmm(r.duracion_total)}</td>
-                        <td style={{ color: '#0ea5e9' }}>{hhmm(r.duracion_profundo)}</td>
-                        <td style={{ color: '#8b5cf6' }}>{hhmm(r.duracion_rem)}</td>
+                        <td style={{ color: 'var(--primary)' }}>{hhmm(r.duracion_profundo)}</td>
+                        <td style={{ color: 'var(--secondary)' }}>{hhmm(r.duracion_rem)}</td>
                         <td>{hhmm(r.duracion_ligero)}</td>
                         <td>{r.calidad ? `${r.calidad}/10` : '—'}</td>
                         <td>
                           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 12,
-                            background: r.fuente === 'apple_health' ? '#dcfce7' : '#f1f5f9',
-                            color:      r.fuente === 'apple_health' ? '#166534' : '#475569' }}>
+                            background: 'var(--bg-elevated)',
+                            color:      r.fuente === 'apple_health' ? 'var(--secondary)' : 'var(--text-secondary)' }}>
                             {r.fuente === 'apple_health' ? '🍎 Apple' : '✏️ Manual'}
                           </span>
                         </td>
@@ -432,9 +432,9 @@ export default function Sueno() {
                     <YAxis tick={{ fontSize: 10 }} unit="h" />
                     <Tooltip formatter={(v, n) => [`${v}h`, n]} />
                     <Legend />
-                    <Bar dataKey="Profundo" stackId="a" fill="#0ea5e9" name="Profundo" />
-                    <Bar dataKey="REM"      stackId="a" fill="#8b5cf6" name="REM" />
-                    <Bar dataKey="Ligero"   stackId="a" fill="#6366f1" name="Ligero" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Profundo" stackId="a" fill="#c9a227" name="Profundo" />
+                    <Bar dataKey="REM"      stackId="a" fill="#e8c84a" name="REM" />
+                    <Bar dataKey="Ligero"   stackId="a" fill="#9a8660" name="Ligero" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -452,11 +452,11 @@ export default function Sueno() {
                     </div>
                     <div style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-500)' }}>promedio de sueño total · OMS recomienda 7-9h</div>
                   </div>
-                  <SleepBar value={avg('duracion_profundo')} max={2}   color="#0ea5e9" label="💪 Profundo (ideal ≥1.5h)" />
-                  <SleepBar value={avg('duracion_rem')}      max={2}   color="#8b5cf6" label="🧠 REM (ideal ≥1.5h)" />
-                  <SleepBar value={avg('duracion_ligero')}   max={4.5} color="#6366f1" label="💤 Ligero" />
+                  <SleepBar value={avg('duracion_profundo')} max={2}   color="#c9a227" label="💪 Profundo (ideal ≥1.5h)" />
+                  <SleepBar value={avg('duracion_rem')}      max={2}   color="#e8c84a" label="🧠 REM (ideal ≥1.5h)" />
+                  <SleepBar value={avg('duracion_ligero')}   max={4.5} color="#9a8660" label="💤 Ligero" />
 
-                  <div style={{ marginTop: 20, padding: 12, background: '#fff7ed', borderRadius: 8, fontSize: 'var(--text-xs)', color: '#92400e', lineHeight: 1.7 }}>
+                  <div style={{ marginTop: 20, padding: 12, background: 'var(--primary-light)', borderRadius: 8, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.7, border: '1px solid var(--border-gold)' }}>
                     <strong>⚡ Tirzepatida y sueño:</strong> Reducir grasa visceral mejora la apnea del sueño, aumenta
                     el sueño profundo (que libera hormona de crecimiento para preservar músculo) y mejora
                     la sensibilidad a la insulina al dormir. Intenta acostarte a la misma hora cada noche.

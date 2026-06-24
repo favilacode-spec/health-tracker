@@ -15,9 +15,9 @@ function hhmm(h) {
 
 function StatRow({ label, value, unit = '' }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
-      <span style={{ color: '#64748b', fontSize: 13 }}>{label}</span>
-      <span style={{ fontWeight: 700, color: '#1e293b', fontSize: 13 }}>{value ? `${value}${unit}` : '—'}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+      <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{label}</span>
+      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13 }}>{value ? `${value}${unit}` : '—'}</span>
     </div>
   )
 }
@@ -237,7 +237,7 @@ Sé específico con los números. Máximo 400 palabras total.`
       {status === 'done' && rd && (
         <div id="reporte-contenido">
           {/* Header */}
-          <div className="card" style={{ marginBottom: 24, background: 'linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%)', color: 'white' }}>
+          <div className="card" style={{ marginBottom: 24, background: 'linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, var(--secondary) 100%)', color: 'var(--bg-base)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, marginBottom: 4 }}>
@@ -269,8 +269,8 @@ Sé específico con los números. Máximo 400 palabras total.`
                 <StatRow label="Metabolismo basal"  value={rd.bio_last.metabolismo_basal} unit=" kcal" />
 
                 {rd.bio_first && rd.bio_first.fecha !== rd.bio_last.fecha && (
-                  <div style={{ marginTop: 16, padding: '12px 14px', background: '#f0fdf4', borderRadius: 8 }}>
-                    <div style={{ fontWeight: 700, fontSize: 12, color: '#166534', marginBottom: 8 }}>
+                  <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--primary-light)', borderRadius: 8, border: '1px solid var(--border-gold)' }}>
+                    <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--secondary)', marginBottom: 8 }}>
                       📈 Cambios desde {rd.bio_first.fecha}
                     </div>
                     {[
@@ -283,8 +283,8 @@ Sé específico con los números. Máximo 400 palabras total.`
                       const good = lowerBetter ? diff < 0 : diff > 0
                       return (
                         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                          <span style={{ color: '#64748b' }}>{label}</span>
-                          <span style={{ fontWeight: 700, color: good ? '#16a34a' : diff === 0 ? '#64748b' : '#dc2626' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                          <span style={{ fontWeight: 700, color: good ? 'var(--secondary)' : diff === 0 ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
                             {diff > 0 ? '+' : ''}{diff}{unit}
                           </span>
                         </div>
@@ -307,9 +307,9 @@ Sé específico con los números. Máximo 400 palabras total.`
                 <StatRow label="Brazo D."  value={rd.peso_last.brazo_der} unit=" cm" />
                 <StatRow label="Muslo D."  value={rd.peso_last.muslo_der} unit=" cm" />
                 {rd.peso_first && rd.peso_first.fecha !== rd.peso_last.fecha && rd.peso_first.peso && rd.peso_last.peso && (
-                  <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: '#166534' }}>Pérdida de peso total</span>
-                    <span style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: '#16a34a' }}>
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--primary-light)', borderRadius: 8, border: '1px solid var(--border-gold)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Pérdida de peso total</span>
+                    <span style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--secondary)' }}>
                       {(rd.peso_first.peso - rd.peso_last.peso).toFixed(1)}kg
                     </span>
                   </div>
@@ -327,7 +327,7 @@ Sé específico con los números. Máximo 400 palabras total.`
                 <StatRow label="Grasas/día"    value={rd.nut_prom_grasas}    unit=" g" />
 
                 {rd.nut_prom_proteinas && rd.bio_last?.masa_muscular_esqueletica && (
-                  <div style={{ marginTop: 12, padding: '10px 14px', background: '#fff7ed', borderRadius: 8, fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
+                  <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--primary-light)', borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, border: '1px solid var(--border-gold)' }}>
                     <strong>Proteína/kg músculo:</strong>{' '}
                     {(rd.nut_prom_proteinas / rd.bio_last.masa_muscular_esqueletica).toFixed(1)}g/kg
                     {' '}(objetivo ≥2.0g/kg para preservar músculo con tirzepatida)
@@ -342,7 +342,7 @@ Sé específico con los números. Máximo 400 palabras total.`
                 <div className="card-title">🏃 Ejercicio <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)' }}>(últimos 30 días)</span></div>
                 <StatRow label="Sesiones"         value={rd.eje_sesiones}      unit="" />
                 <StatRow label="Promedio duración" value={rd.eje_prom_duracion} unit=" min" />
-                <div style={{ marginTop: 12, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, fontSize: 12, color: '#166534', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--primary-light)', borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, border: '1px solid var(--border-gold)' }}>
                   {rd.eje_sesiones >= 12 ? '✅ Excelente consistencia de ejercicio (≥3x/semana)' :
                    rd.eje_sesiones >= 8  ? '👍 Buen ritmo de ejercicio (2-3x/semana)' :
                                            '⚠️ Intenta aumentar la frecuencia a 3-4 sesiones/semana'}
@@ -357,8 +357,8 @@ Sé específico con los números. Máximo 400 palabras total.`
                 <StatRow label="Sueño total"  value={hhmm(rd.sue_prom_total)}    unit="" />
                 <StatRow label="Sueño profundo" value={hhmm(rd.sue_prom_profundo)} unit="" />
                 <StatRow label="Sueño REM"    value={hhmm(rd.sue_prom_rem)}      unit="" />
-                <div style={{ marginTop: 12, padding: '10px 14px', background: (rd.sue_prom_total || 0) >= 7 ? '#f0fdf4' : '#fef2f2', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
-                  color: (rd.sue_prom_total || 0) >= 7 ? '#166534' : '#991b1b' }}>
+                <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--primary-light)', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
+                  color: (rd.sue_prom_total || 0) >= 7 ? 'var(--secondary)' : 'var(--text-secondary)', border: '1px solid var(--border-gold)' }}>
                   {(rd.sue_prom_total || 0) >= 7 ? '✅ Buen promedio de sueño (≥7h)' :
                    (rd.sue_prom_total || 0) >= 6 ? '⚠️ Sueño en límite inferior (6-7h)' :
                                                     '❌ Sueño insuficiente (<6h) — afecta pérdida de grasa'}
@@ -385,7 +385,7 @@ Sé específico con los números. Máximo 400 palabras total.`
               </div>
             )}
             {!aiLoading && aiAnalysis && (
-              <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.8, color: 'var(--gray-700)', whiteSpace: 'pre-wrap' }}>
+              <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.8, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
                 {aiAnalysis}
               </div>
             )}

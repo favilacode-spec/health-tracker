@@ -134,7 +134,7 @@ export default function Dashboard() {
         />
 
         {totalLost !== null && parseFloat(totalLost) > 0 && (
-          <div className="stat-card" style={{ borderColor: 'rgba(38,217,160,0.35)' }}>
+          <div className="stat-card" style={{ borderColor: 'var(--border-gold)' }}>
             <div className="stat-card-label">🏆 Total perdido</div>
             <div className="stat-card-value" style={{ color: 'var(--secondary)' }}>
               {totalLost}
@@ -158,7 +158,7 @@ export default function Dashboard() {
               <span>{Math.min(100, Math.round(todayProtein / goalProtein * 100))}%</span>
             </div>
             <div className="progress-bar-container">
-              <div className="progress-bar-fill green" style={{ width: `${Math.min(100, todayProtein / goalProtein * 100)}%` }} />
+              <div className="progress-bar-fill" style={{ width: `${Math.min(100, todayProtein / goalProtein * 100)}%` }} />
             </div>
           </div>
         </div>
@@ -189,9 +189,9 @@ export default function Dashboard() {
         />
 
         {lastBio && (
-          <div className="stat-card" style={{ borderColor: 'rgba(90,168,240,0.3)' }}>
+          <div className="stat-card" style={{ borderColor: 'var(--border-gold)' }}>
             <div className="stat-card-label">🔬 Grasa corporal</div>
-            <div className="stat-card-value" style={{ color: 'var(--info)' }}>
+            <div className="stat-card-value" style={{ color: 'var(--primary)' }}>
               {lastBio.body_fat_pct}
               <span className="stat-card-unit">%</span>
             </div>
@@ -283,7 +283,7 @@ export default function Dashboard() {
               { icon: '🍽️', label: 'Comidas', value: `${todayNutrition.length}`, meta: 'registradas', ok: todayNutrition.length >= 3 },
               { icon: '🏃', label: 'Ejercicio', value: `${todayExercise.reduce((s, e) => s + e.duration_min, 0)} min`, meta: `${todayExercise.length} actividades`, ok: todayExercise.length > 0 },
             ].map(item => (
-              <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-elevated)', border: `1px solid ${item.ok ? 'rgba(38,217,160,0.2)' : 'var(--border)'}` }}>
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-elevated)', border: `1px solid ${item.ok ? 'var(--border-gold)' : 'var(--border)'}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
                   <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{item.label}</span>
@@ -291,7 +291,7 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{item.value}</span>
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.meta}</span>
-                  <span style={{ fontSize: '0.85rem' }}>{item.ok ? '✅' : '○'}</span>
+                  <span style={{ fontSize: '0.85rem', color: item.ok ? 'var(--secondary)' : 'var(--border-bright)' }}>{item.ok ? '◆' : '◇'}</span>
                 </div>
               </div>
             ))}
@@ -314,7 +314,7 @@ export default function Dashboard() {
                 </span>
               </div>
               {lastTirze.next_dose_date && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: nextDoseInfo <= 1 ? 'var(--danger-light)' : 'var(--bg-elevated)', border: `1px solid ${nextDoseInfo <= 1 ? 'rgba(240,101,101,0.3)' : 'var(--border)'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: nextDoseInfo <= 1 ? 'var(--primary-light)' : 'var(--bg-elevated)', border: `1px solid ${nextDoseInfo <= 1 ? 'var(--border-gold)' : 'var(--border)'}` }}>
                   <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>Próxima dosis</span>
                   <span style={{ fontWeight: 700, color: nextDoseInfo <= 1 ? 'var(--danger)' : 'var(--accent)' }}>
                     {nextDoseInfo <= 0 ? '¡Hoy!' : `en ${nextDoseInfo} día${nextDoseInfo !== 1 ? 's' : ''}`}

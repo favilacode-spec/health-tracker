@@ -19,9 +19,9 @@ const EXERCISE_TYPES = [
 ]
 
 const INTENSITIES = [
-  { id: 'baja',   label: 'Baja',   color: 'var(--secondary)' },
-  { id: 'media',  label: 'Media',  color: 'var(--accent)' },
-  { id: 'alta',   label: 'Alta',   color: 'var(--danger)' },
+  { id: 'baja',   label: 'Baja',   color: '#9a8660' },  /* muted gold */
+  { id: 'media',  label: 'Media',  color: '#c9a227' },  /* imperial gold */
+  { id: 'alta',   label: 'Alta',   color: '#ede8e0' },  /* cream / high attention */
 ]
 
 const SYNC_INTERVAL_MS = 5 * 60 * 1000 // 5 minutos
@@ -420,8 +420,8 @@ export default function Ejercicio() {
                       style={{
                         padding: '8px 14px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', fontWeight: 600, transition: 'all 0.15s',
                         border: form.exercise_type === t.id ? '2px solid var(--primary)' : '2px solid var(--gray-300)',
-                        background: form.exercise_type === t.id ? 'var(--primary-light)' : 'white',
-                        color: form.exercise_type === t.id ? 'var(--primary-dark)' : 'var(--gray-600)',
+                        background: form.exercise_type === t.id ? 'var(--primary-light)' : 'var(--bg-elevated)',
+                        color: form.exercise_type === t.id ? 'var(--secondary)' : 'var(--text-secondary)',
                       }}>
                       {t.icon} {t.label}
                     </button>
@@ -435,9 +435,9 @@ export default function Ejercicio() {
                     <button key={int.id} type="button" onClick={() => setForm(f => ({ ...f, intensity: int.id }))}
                       style={{
                         padding: '8px 20px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)', fontWeight: 600, transition: 'all 0.15s',
-                        border: `2px solid ${form.intensity === int.id ? int.color : 'var(--gray-300)'}`,
-                        background: form.intensity === int.id ? int.color + '20' : 'white',
-                        color: form.intensity === int.id ? int.color : 'var(--gray-600)',
+                        border: `2px solid ${form.intensity === int.id ? int.color : 'var(--border-bright)'}`,
+                        background: form.intensity === int.id ? int.color + '20' : 'var(--bg-elevated)',
+                        color: form.intensity === int.id ? int.color : 'var(--text-secondary)',
                       }}>
                       {int.label}
                     </button>
@@ -524,7 +524,7 @@ export default function Ejercicio() {
           ) : !hevyConfig ? (
             /* ── Sin conectar ── */
             <div>
-              <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #7C3AED' }}>
+              <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid var(--primary)' }}>
                 <div className="card-title">🏋️ Conectar Hevy</div>
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)', marginBottom: 16 }}>
                   Sincronizá automáticamente tus entrenamientos de Hevy. Los datos se actualizan cada 5 minutos mientras usás la app.
@@ -537,7 +537,7 @@ export default function Ejercicio() {
                     { n: '4', text: 'Pegala acá abajo y conectá', icon: '🔗' },
                   ].map(s => (
                     <div key={s.n} style={{ display: 'flex', gap: 10, padding: 12, background: 'var(--gray-50)', borderRadius: 'var(--radius-sm)' }}>
-                      <span style={{ background: '#7C3AED', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.n}</span>
+                      <span style={{ background: 'var(--primary)', color: '#000', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.n}</span>
                       <span style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-700)' }}>{s.icon} {s.text}</span>
                     </div>
                   ))}
@@ -555,7 +555,7 @@ export default function Ejercicio() {
                     className="btn-primary"
                     onClick={saveHevyKey}
                     disabled={hevySyncing || !hevyApiKeyInput.trim()}
-                    style={{ background: '#7C3AED', whiteSpace: 'nowrap' }}
+                    style={{ whiteSpace: 'nowrap' }}
                   >
                     {hevySyncing ? '⏳ Conectando...' : '🔗 Conectar'}
                   </button>
@@ -565,8 +565,8 @@ export default function Ejercicio() {
                     {hevyMsg.text}
                   </div>
                 )}
-                <div style={{ marginTop: 12, padding: '10px 14px', background: '#F5F3FF', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', color: '#7C3AED' }}>
+                <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--primary-light)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-gold)' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--secondary)' }}>
                     🔒 Tu API key se guarda de forma segura en tu base de datos privada con Row Level Security
                   </span>
                 </div>
@@ -576,10 +576,10 @@ export default function Ejercicio() {
             /* ── Conectado ── */
             <div>
               {/* Status bar */}
-              <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #7C3AED' }}>
+              <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid var(--primary)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981' }} />
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--secondary)', boxShadow: '0 0 6px var(--secondary-glow)' }} />
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>🏋️ Hevy conectado</div>
                       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
@@ -592,7 +592,7 @@ export default function Ejercicio() {
                       className="btn-primary"
                       onClick={() => syncHevy(false)}
                       disabled={hevySyncing}
-                      style={{ background: '#7C3AED', fontSize: 'var(--text-sm)', padding: '8px 16px' }}
+                      style={{ fontSize: 'var(--text-sm)', padding: '8px 16px' }}
                     >
                       {hevySyncing ? '⏳ Sincronizando...' : '🔄 Sync ahora'}
                     </button>
@@ -618,7 +618,7 @@ export default function Ejercicio() {
                 <div className="empty-state">
                   <div className="empty-state-icon">🏋️</div>
                   <p>No hay entrenamientos sincronizados todavía.</p>
-                  <button className="btn-primary" onClick={() => syncHevy(false)} style={{ background: '#7C3AED', marginTop: 12 }}>
+                  <button className="btn-primary" onClick={() => syncHevy(false)} style={{ marginTop: 12 }}>
                     Sincronizar ahora
                   </button>
                 </div>
@@ -650,7 +650,7 @@ export default function Ejercicio() {
                                 <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--gray-600)' }}>📊 {w.total_sets} series</span>
                               )}
                               {vol && (
-                                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: '#7C3AED' }}>🏋️ {vol} vol.</span>
+                                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--primary)' }}>🏋️ {vol} vol.</span>
                               )}
                               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)' }}>
                                 {exercises.length} ejercicio{exercises.length !== 1 ? 's' : ''}
@@ -685,9 +685,9 @@ export default function Ejercicio() {
                                         <span key={j} style={{
                                           fontSize: 'var(--text-xs)', fontWeight: 600,
                                           padding: '3px 8px', borderRadius: 20,
-                                          background: isWarmup ? '#FEF3C7' : '#EDE9FE',
-                                          color: isWarmup ? '#92400E' : '#5B21B6',
-                                          border: `1px solid ${isWarmup ? '#FCD34D' : '#C4B5FD'}`
+                                          background: 'var(--bg-elevated)',
+                                          color: isWarmup ? 'var(--secondary)' : 'var(--text-primary)',
+                                          border: `1px solid ${isWarmup ? 'var(--border-gold)' : 'var(--border-bright)'}`
                                         }}>
                                           {isWarmup ? '🔥 ' : ''}{label}
                                         </span>
