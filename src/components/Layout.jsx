@@ -14,7 +14,6 @@ const navItems = [
 ]
 
 const toolItems = [
-  { to: '/nutricion-ia', icon: '🤖', label: 'IA Nutricional' },
   { to: '/exportar',     icon: '📥', label: 'Exportar' },
   { to: '/reporte',      icon: '📋', label: 'Reporte IA' },
 ]
