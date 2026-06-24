@@ -157,6 +157,12 @@ ul, ol { list-style: none; }
 
 ::selection { background: var(--primary-light); color: var(--text-primary); }
 
+/* ─── EMOJI GRAYSCALE ────────────────────────────────────── */
+.emoji-bw {
+  filter: grayscale(1);
+  display: inline-block;
+}
+
 /* ─── SAKURA PETALS ──────────────────────────────────────── */
 .sakura-petal {
   position: absolute;
