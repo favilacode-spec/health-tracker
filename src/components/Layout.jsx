@@ -5,17 +5,17 @@ import Sakura from './Sakura'
 
 /* ── Kanji per route – displayed as ambient watermark ── */
 const ROUTE_KANJI = {
-  '/':             '前進',  // Zenshin  — progreso
-  '/peso':         '重量',  // Jūryō    — peso
-  '/biopedancia':  '体組成', // Taiso    — composición corporal
-  '/tirzepatida':  '治癒',  // Chiyu    — curación
-  '/nutricion':    '栄養',  // Eiyō     — nutrición
-  '/ejercicio':    '鍛錬',  // Tanren   — forja / entrenamiento
-  '/alimentacion': '食事',  // Shokuji  — alimento
-  '/sueno':        '睡眠',  // Suimin   — sueño
-  '/exportar':     '記録',  // Kiroku   — registro
-  '/reporte':      '分析',  // Bunseki  — análisis
-  '/perfil':       '自己',  // Jiko     — identidad
+  '/':             '前進',
+  '/peso':         '重量',
+  '/biopedancia':  '体組成',
+  '/tirzepatida':  '治癒',
+  '/nutricion':    '栄養',
+  '/ejercicio':    '鍛錬',
+  '/alimentacion': '食事',
+  '/sueno':        '睡眠',
+  '/exportar':     '記録',
+  '/reporte':      '分析',
+  '/perfil':       '自己',
 }
 
 const navItems = [
@@ -34,27 +34,6 @@ const toolItems = [
   { to: '/reporte',  kanji: '分', label: 'Reporte IA' },
 ]
 
-/* ── Torii gate SVG logo ── */
-function ToriiLogo() {
-  return (
-    <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Top crossbeam — bright gold */}
-      <rect x="1" y="5" width="32" height="3.5" rx="1.75" fill="#e8c84a" />
-      {/* Second crossbeam — deep gold */}
-      <rect x="5" y="11" width="24" height="2.8" rx="1.4" fill="#c9a227" />
-      {/* Left pillar */}
-      <rect x="7" y="13.8" width="3.2" height="19" rx="1.6" fill="#c9a227" />
-      {/* Right pillar */}
-      <rect x="23.8" y="13.8" width="3.2" height="19" rx="1.6" fill="#c9a227" />
-      {/* Cap ends on top beam — white */}
-      <rect x="0" y="3.5" width="5" height="5" rx="2.5" fill="#ede8e0" opacity="0.9" />
-      <rect x="29" y="3.5" width="5" height="5" rx="2.5" fill="#ede8e0" opacity="0.9" />
-      {/* Glow dot center */}
-      <circle cx="17" cy="6.75" r="1.2" fill="rgba(255,255,255,0.3)" />
-    </svg>
-  )
-}
-
 export default function Layout({ children }) {
   const { profile, signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -70,30 +49,17 @@ export default function Layout({ children }) {
 
   return (
     <div className="layout">
-      {/* Ambient sakura petals */}
       <Sakura />
-
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
       )}
-
-      {/* ── SIDEBAR ── */}
       <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-
-        {/* Brand header */}
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <ToriiLogo />
-          </div>
           <div className="sidebar-title">
             <span className="sidebar-app-name">ZENSHIN</span>
-            <span className="sidebar-app-kanji">前進</span>
             <span className="sidebar-user-name">{profile?.name || 'Usuario'}</span>
           </div>
         </div>
-
-        {/* Navigation */}
         <nav className="sidebar-nav">
           {navItems.map(item => (
             <NavLink
@@ -107,11 +73,7 @@ export default function Layout({ children }) {
               <span>{item.label}</span>
             </NavLink>
           ))}
-
-          <div className="nav-section-label" style={{ marginTop: 8 }}>
-            Herramientas
-          </div>
-
+          <div className="nav-section-label" style={{ marginTop: 8 }}>Herramientas</div>
           {toolItems.map(item => (
             <NavLink
               key={item.to}
@@ -124,8 +86,6 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
-
-        {/* Footer */}
         <div className="sidebar-footer">
           <NavLink
             to="/perfil"
@@ -141,21 +101,14 @@ export default function Layout({ children }) {
           </button>
         </div>
       </aside>
-
-      {/* ── MAIN ── */}
       <div className="main-wrapper">
         <header className="topbar">
           <button className="topbar-menu-btn" onClick={() => setSidebarOpen(true)}>☰</button>
           <span className="topbar-title">ZENSHIN</span>
           <span className="topbar-user">{profile?.name?.split(' ')[0]}</span>
         </header>
-
         <main className="main-content">
-          {/* Route-specific kanji watermark */}
-          <div className="kanji-watermark" aria-hidden="true">
-            {watermarkKanji}
-          </div>
-
+          <div className="kanji-watermark" aria-hidden="true">{watermarkKanji}</div>
           {children}
         </main>
       </div>
