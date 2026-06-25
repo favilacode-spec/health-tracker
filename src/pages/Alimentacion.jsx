@@ -168,9 +168,12 @@ const NUTRITION_TIPS = [
   { icon: '🍬', title: 'Eliminar azúcares simples', text: 'Refrescos, dulces y harinas blancas interfieren con la pérdida de peso y potencian las náuseas iniciales.' },
   { icon: '⏰', title: 'Horarios regulares', text: 'Comer siempre a la misma hora estabiliza el apetito residual y mejora el metabolismo.' },
   { icon: '🧃', title: 'Evitar alcohol completamente', text: 'Calorías vacías + interacción negativa con el tratamiento. El alcohol baja inhibiciones dietéticas también.' },
-  { icon: '🫚', title: 'El día de la inyección', text: 'Optar por comidas muy livianas y digestivas. Caldos, gelatinas, yogur y frutas suaves. Evitar grasas.' },
+  { icon: '🫙', title: 'El día de la inyección', text: 'Optar por comidas muy livianas y digestivas. Caldos, gelatinas, yogur y frutas suaves. Evitar grasas.' },
   { icon: '🌡️', title: 'Temperatura de los alimentos', text: 'Los alimentos fríos o tibios suelen tolerarse mejor que los muy calientes los días post-inyección.' },
 ]
+
+const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export default function Alimentacion() {
   const { user } = useAuth()
@@ -184,6 +187,12 @@ export default function Alimentacion() {
   const [msg, setMsg] = useState({ type: '', text: '' })
   const [expandedRecipe, setExpandedRecipe] = useState(null)
   const [shareMsg, setShareMsg] = useState('')
+
+  // AI Recipe state
+  const [recipeIngredients, setRecipeIngredients] = useState('')
+  const [recipeLoading, setRecipeLoading] = useState(false)
+  const [recipeResult, setRecipeResult] = useState(null)
+  const [recipeMsg, setRecipeMsg] = useState({ type: '', text: '' })
 
   useEffect(() => { loadLists() }, [user])
   useEffect(() => { if (activeList) loadItems(activeList.id) }, [activeList])
@@ -272,6 +281,31 @@ export default function Alimentacion() {
     }
   }
 
+  async function suggestRecipe(e) {
+    e.preventDefault()
+    if (!recipeIngredients.trim()) return
+    setRecipeLoading(true); setRecipeResult(null); setRecipeMsg({ type: '', text: '' })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/suggest-recipe`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ingredients: recipeIngredients }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Error al generar receta')
+      setRecipeResult(data)
+    } catch (err) {
+      setRecipeMsg({ type: 'error', text: `Error: ${err.message}` })
+    } finally {
+      setRecipeLoading(false)
+    }
+  }
+
   const groupedItems = FOOD_CATEGORIES.reduce((acc, cat) => {
     const catItems = items.filter(i => i.category === cat)
     if (catItems.length > 0) acc[cat] = catItems
@@ -296,6 +330,7 @@ export default function Alimentacion() {
           ['lista',        '🛒', 'Lista de compras'],
           ['recomendados', '⭐', 'Alimentos'],
           ['recetas',      '👨‍🍳', 'Recetas'],
+          ['receta-ia',    '🤖', 'Receta IA'],
           ['consejos',     '💡', 'Consejos'],
         ].map(([k, e, l]) => (
           <button key={k} className={`tab-btn ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>
@@ -480,7 +515,6 @@ export default function Alimentacion() {
                 overflow: 'hidden',
                 transition: 'border-color 0.2s',
               }}>
-                {/* Header — siempre visible */}
                 <button
                   style={{ width: '100%', padding: '14px 16px', textAlign: 'left', display: 'flex', gap: 12, alignItems: 'flex-start' }}
                   onClick={() => setExpandedRecipe(expandedRecipe === i ? null : i)}>
@@ -497,14 +531,10 @@ export default function Alimentacion() {
                     {expandedRecipe === i ? '▲' : '▼'}
                   </span>
                 </button>
-
-                {/* Detalle expandible */}
                 {expandedRecipe === i && (
                   <div style={{ padding: '0 16px 16px', borderTop: '1px solid var(--border)' }}>
                     <div style={{ paddingTop: 14 }}>
-                      <div style={{ fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                        Ingredientes
-                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Ingredientes</div>
                       <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 3 }}>
                         {recipe.ingredients.map((ing, j) => (
                           <li key={j} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{ing}</li>
@@ -512,9 +542,7 @@ export default function Alimentacion() {
                       </ul>
                     </div>
                     <div style={{ marginTop: 14 }}>
-                      <div style={{ fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                        Preparación
-                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Preparación</div>
                       <ol style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {recipe.steps.map((step, j) => (
                           <li key={j} style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{step}</li>
@@ -545,6 +573,114 @@ export default function Alimentacion() {
         </div>
       )}
 
+      {/* ── RECETA IA ── */}
+      {tab === 'receta-ia' && (
+        <div className="section-grid">
+          <div className="card">
+            <div className="card-title">🤖 Sugerir receta con IA</div>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+              Escribí los ingredientes que tenés disponibles y la IA te va a sugerir una receta con las cantidades exactas en gramos para cada uno.
+            </p>
+
+            {recipeMsg.text && (
+              <div className={recipeMsg.type === 'error' ? 'form-error' : 'form-success'} style={{ marginBottom: 12 }}>
+                {recipeMsg.text}
+              </div>
+            )}
+
+            <form onSubmit={suggestRecipe}>
+              <div className="form-group" style={{ marginBottom: 14 }}>
+                <label>¿Qué ingredientes tenés?</label>
+                <textarea
+                  placeholder="Ej: pollo, arroz, brócoli, aceite de oliva, ajo, limón, sal"
+                  value={recipeIngredients}
+                  onChange={e => setRecipeIngredients(e.target.value)}
+                  style={{ minHeight: 110 }}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn-primary btn-full" disabled={recipeLoading}>
+                {recipeLoading ? '⏳ Generando receta...' : '✨ Sugerir receta'}
+              </button>
+            </form>
+          </div>
+
+          <div className="card">
+            {!recipeResult ? (
+              <div className="empty-state" style={{ padding: '40px 0' }}>
+                <div className="empty-state-icon">👨‍🍳</div>
+                <p>La receta aparecerá aquí.</p>
+                <p style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', maxWidth: 230, margin: '8px auto 0', lineHeight: 1.5 }}>
+                  Cuanto más detallés los ingredientes, mejor será la receta.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="card-title">🍽️ {recipeResult.titulo}</div>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', marginBottom: 16, fontStyle: 'italic', lineHeight: 1.5 }}>
+                  {recipeResult.descripcion}
+                </p>
+
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {recipeResult.tiempo_min && (
+                    <span className="badge badge-gray">⏱ {recipeResult.tiempo_min} min</span>
+                  )}
+                  {recipeResult.macros_aproximados?.proteinas_g && (
+                    <span className="badge badge-success">🥩 ~{recipeResult.macros_aproximados.proteinas_g}g prot</span>
+                  )}
+                  {recipeResult.macros_aproximados?.calorias && (
+                    <span className="badge badge-gray">🔥 ~{recipeResult.macros_aproximados.calorias} kcal</span>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--primary)', marginBottom: 10, letterSpacing: '0.04em' }}>
+                    📦 INGREDIENTES (cantidades exactas)
+                  </div>
+                  {(recipeResult.ingredientes || []).map((ing, i) => (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '7px 10px', marginBottom: 4, borderRadius: 'var(--radius-sm)',
+                      background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                    }}>
+                      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{ing.nombre}</span>
+                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--secondary)', whiteSpace: 'nowrap' }}>
+                        {ing.gramos ? `${ing.gramos}g` : ing.cantidad || '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--primary)', marginBottom: 10, letterSpacing: '0.04em' }}>
+                    📋 PREPARACIÓN
+                  </div>
+                  {(recipeResult.instrucciones || []).map((step, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-start' }}>
+                      <span style={{
+                        background: 'var(--primary)', color: '#000', borderRadius: '50%',
+                        width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 700, flexShrink: 0, marginTop: 1,
+                      }}>{i + 1}</span>
+                      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button className="btn-secondary btn-full" style={{ marginTop: 16 }}
+                  onClick={() => {
+                    setRecipeResult(null)
+                    setRecipeIngredients('')
+                    setRecipeMsg({ type: '', text: '' })
+                  }}>
+                  🔄 Nueva receta
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── CONSEJOS ── */}
       {tab === 'consejos' && (
         <div>
@@ -561,7 +697,6 @@ export default function Alimentacion() {
             ))}
           </div>
 
-          {/* Plan sugerido */}
           <div className="card">
             <div className="card-title">📅 Plan de alimentación diario sugerido</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
