@@ -28,7 +28,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}))
     const action = body.action || 'sync'
 
-    // ── ACCIÓN: guardar API key ──────────────────────────────
+    // -- ACCION: guardar API key
     if (action === 'save_key') {
       const api_key = (body.api_key || '').trim()
       if (!api_key) {
@@ -37,17 +37,15 @@ serve(async (req) => {
         })
       }
 
-      // Validar que la key funciona
-      const testResp = await fetch(`${HEVY_BASE}/v1/user/info`, {
+      // Validar key con endpoint real de Hevy
+      const testResp = await fetch(HEVY_BASE + '/v1/workouts?page=1&pageSize=1', {
         headers: { 'api-key': api_key }
       })
       if (!testResp.ok) {
-        return new Response(JSON.stringify({ error: 'API key inválida. Verificá en hevy.com/settings?developer' }), {
+        return new Response(JSON.stringify({ error: 'API key invalida (' + testResp.status + '). Revisa en hevy.com/settings?developer' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
-
-      const userInfo = await testResp.json()
 
       await supabase.from('hevy_config').upsert({
         user_id: user.id,
@@ -56,12 +54,12 @@ serve(async (req) => {
         updated_at: new Date().toISOString()
       })
 
-      return new Response(JSON.stringify({ ok: true, hevy_user: userInfo }), {
+      return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // ── ACCIÓN: desconectar ──────────────────────────────────
+    // -- ACCION: desconectar
     if (action === 'disconnect') {
       await supabase.from('hevy_config').delete().eq('user_id', user.id)
       await supabase.from('hevy_workouts').delete().eq('user_id', user.id)
@@ -70,7 +68,7 @@ serve(async (req) => {
       })
     }
 
-    // ── ACCIÓN: sync (default) ───────────────────────────────
+    // -- ACCION: sync (default)
     const { data: config, error: configError } = await supabase
       .from('hevy_config').select('*').eq('user_id', user.id).single()
 
@@ -87,54 +85,34 @@ serve(async (req) => {
     let hasMore = true
 
     while (hasMore) {
-      const url = `${HEVY_BASE}/v1/workouts/events?page=${page}&pageSize=10&since=${encodeURIComponent(since)}`
+      const url = HEVY_BASE + '/v1/workouts/events?page=' + page + '&pageSize=10&since=' + encodeURIComponent(since)
       const resp = await fetch(url, { headers: { 'api-key': config.api_key } })
 
       if (!resp.ok) {
         const errText = await resp.text()
-        throw new Error(`Hevy API error ${resp.status}: ${errText}`)
+        throw new Error('Hevy API error ' + resp.status + ': ' + errText)
       }
 
       const data = await resp.json()
-      const events: any[] = data.events || []
+      const events = data.events || []
 
       for (const event of events) {
         if (event.type === 'deleted') {
-          await supabase.from('hevy_workouts')
-            .delete()
-            .eq('hevy_id', event.workout_id)
-            .eq('user_id', user.id)
+          await supabase.from('hevy_workouts').delete().eq('hevy_id', event.workout_id).eq('user_id', user.id)
           deleted++
         } else if (event.workout) {
           const w = event.workout
-          const exercises: any[] = w.exercises || []
-
-          // Calcular volumen total (kg × reps por cada set)
-          const totalVolume = exercises.reduce((sum: number, ex: any) =>
-            sum + (ex.sets || []).reduce((s: number, set: any) =>
-              s + ((set.weight_kg || 0) * (set.reps || 0)), 0), 0)
-
-          const totalSets = exercises.reduce((sum: number, ex: any) =>
-            sum + (ex.sets || []).length, 0)
-
-          const durationMin = w.start_time && w.end_time
-            ? Math.round((new Date(w.end_time).getTime() - new Date(w.start_time).getTime()) / 60000)
-            : null
-
+          const exercises = w.exercises || []
+          const totalVolume = exercises.reduce((sum, ex) => sum + (ex.sets || []).reduce((s, set) => s + ((set.weight_kg || 0) * (set.reps || 0)), 0), 0)
+          const totalSets = exercises.reduce((sum, ex) => sum + (ex.sets || []).length, 0)
+          const durationMin = w.start_time && w.end_time ? Math.round((new Date(w.end_time).getTime() - new Date(w.start_time).getTime()) / 60000) : null
           await supabase.from('hevy_workouts').upsert({
-            hevy_id: w.id,
-            user_id: user.id,
-            title: w.title || 'Entrenamiento',
-            start_time: w.start_time,
-            end_time: w.end_time,
-            duration_min: durationMin,
-            exercises: exercises,
-            total_sets: totalSets,
+            hevy_id: w.id, user_id: user.id, title: w.title || 'Entrenamiento',
+            start_time: w.start_time, end_time: w.end_time, duration_min: durationMin,
+            exercises: exercises, total_sets: totalSets,
             total_volume_kg: Math.round(totalVolume * 100) / 100,
-            hevy_updated_at: w.updated_at,
-            synced_at: new Date().toISOString()
+            hevy_updated_at: w.updated_at, synced_at: new Date().toISOString()
           }, { onConflict: 'hevy_id,user_id' })
-
           synced++
         }
       }
@@ -143,10 +121,7 @@ serve(async (req) => {
       page++
     }
 
-    // Actualizar last_sync_at y total_synced
-    const { data: currentConfig } = await supabase
-      .from('hevy_config').select('total_synced').eq('user_id', user.id).single()
-
+    const { data: currentConfig } = await supabase.from('hevy_config').select('total_synced').eq('user_id', user.id).single()
     await supabase.from('hevy_config').update({
       last_sync_at: new Date().toISOString(),
       total_synced: (currentConfig?.total_synced || 0) + synced,
@@ -157,7 +132,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
-  } catch (e: any) {
+  } catch (e) {
     return new Response(JSON.stringify({ error: e.message || String(e) }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
