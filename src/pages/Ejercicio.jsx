@@ -32,7 +32,7 @@ export default function Ejercicio() {
   const [weeklyData, setWeeklyData] = useState([])
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [msg, setMsg] = useState({ type: '', text: '' })
-  const [tab, setTab] = useState('registrar')
+  const [tab, setTab] = useState('historial')
 
   // Apple Health import state
   const [importWorkouts, setImportWorkouts] = useState([])
@@ -48,18 +48,6 @@ export default function Ejercicio() {
   const [hevyLoading, setHevyLoading] = useState(true)
   const [expandedWorkout, setExpandedWorkout] = useState(null)
   const syncIntervalRef = useRef(null)
-
-  const [form, setForm] = useState({
-    exercise_type: 'caminata',
-    duration_min: '',
-    intensity: 'media',
-    calories_burned: '',
-    distance_km: '',
-    sets: '',
-    reps: '',
-    weight_used_kg: '',
-    notes: '',
-  })
 
   useEffect(() => { loadExercises(); loadWeekly() }, [user, selectedDate])
 
@@ -93,28 +81,6 @@ export default function Ejercicio() {
   }
 
   function showMsg(type, text) { setMsg({ type, text }); setTimeout(() => setMsg({ type: '', text: '' }), 3000) }
-
-  async function saveExercise(e) {
-    e.preventDefault()
-    if (!form.duration_min) return
-    const { error } = await supabase.from('exercise_logs').insert({
-      user_id: user.id,
-      date: selectedDate,
-      exercise_type: form.exercise_type,
-      duration_min: parseInt(form.duration_min),
-      intensity: form.intensity,
-      calories_burned: form.calories_burned ? parseInt(form.calories_burned) : null,
-      distance_km: form.distance_km ? parseFloat(form.distance_km) : null,
-      sets: form.sets ? parseInt(form.sets) : null,
-      reps: form.reps ? parseInt(form.reps) : null,
-      weight_used_kg: form.weight_used_kg ? parseFloat(form.weight_used_kg) : null,
-      notes: form.notes,
-    })
-    if (error) { showMsg('error', 'Error al guardar.'); return }
-    showMsg('success', '✅ Ejercicio registrado')
-    setForm(f => ({ ...f, duration_min: '', calories_burned: '', distance_km: '', sets: '', reps: '', weight_used_kg: '', notes: '' }))
-    loadExercises(); loadWeekly()
-  }
 
   // ─── HEVY FUNCTIONS ──────────────────────────────────────────────────────────
 
@@ -332,8 +298,6 @@ export default function Ejercicio() {
 
   const totalMinToday = exercises.reduce((s, e) => s + e.duration_min, 0)
   const totalCalToday = exercises.reduce((s, e) => s + (e.calories_burned || 0), 0)
-  const showStrengthFields = ['pesas', 'funcional'].includes(form.exercise_type)
-  const showDistanceFields = ['caminata', 'trote', 'bicicleta', 'natacion'].includes(form.exercise_type)
 
   return (
     <div>
@@ -383,126 +347,20 @@ export default function Ejercicio() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', marginBottom: 24, overflowX: 'auto' }}>
+      <div className="tabs-bar">
         {[
-          ['registrar', '➕ Registrar'],
-          ['historial', '📋 Historial'],
-          ['semana', '📊 Semana'],
-          ['hevy', hevyConfig ? '🏋️ Hevy ✅' : '🏋️ Hevy'],
-          ['apple', '🍎 Apple Health'],
-        ].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)}
-            style={{
-              padding: '10px 20px', fontSize: 'var(--text-sm)', fontWeight: 500, whiteSpace: 'nowrap',
-              borderBottom: tab === key ? '2px solid var(--primary)' : '2px solid transparent',
-              color: tab === key ? 'var(--primary)' : 'var(--gray-500)', marginBottom: -1
-            }}>
-            {label}
+          ['historial', '📋', 'Historial'],
+          ['semana', '📊', 'Semana'],
+          ['hevy', '🏋️', hevyConfig ? 'Hevy ✅' : 'Hevy'],
+          ['apple', '🍎', 'Apple Health'],
+        ].map(([key, em, label]) => (
+          <button key={key} className={`tab-btn ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>
+            <span className="emoji-bw">{em}</span> {label}
           </button>
         ))}
       </div>
 
       {msg.text && <div className={msg.type === 'success' ? 'form-success' : 'form-error'} style={{ marginBottom: 16 }}>{msg.text}</div>}
-
-      {/* ═══════════════════════════════════════════════════════════
-          TAB: Registrar
-      ═══════════════════════════════════════════════════════════ */}
-      {tab === 'registrar' && (
-        <div className="section-grid">
-          <div className="card" style={{ gridColumn: '1 / -1' }}>
-            <div className="card-title">➕ Nuevo ejercicio</div>
-            <form onSubmit={saveExercise}>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--gray-700)', display: 'block', marginBottom: 8 }}>Tipo de ejercicio</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {EXERCISE_TYPES.map(t => (
-                    <button key={t.id} type="button" onClick={() => setForm(f => ({ ...f, exercise_type: t.id }))}
-                      style={{
-                        padding: '8px 14px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', fontWeight: 600, transition: 'all 0.15s',
-                        border: form.exercise_type === t.id ? '2px solid var(--primary)' : '2px solid var(--gray-300)',
-                        background: form.exercise_type === t.id ? 'var(--primary-light)' : 'var(--bg-elevated)',
-                        color: form.exercise_type === t.id ? 'var(--secondary)' : 'var(--text-secondary)',
-                      }}>
-                      {t.icon} {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--gray-700)', display: 'block', marginBottom: 8 }}>Intensidad</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {INTENSITIES.map(int => (
-                    <button key={int.id} type="button" onClick={() => setForm(f => ({ ...f, intensity: int.id }))}
-                      style={{
-                        padding: '8px 20px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)', fontWeight: 600, transition: 'all 0.15s',
-                        border: `2px solid ${form.intensity === int.id ? int.color : 'var(--border-bright)'}`,
-                        background: form.intensity === int.id ? int.color + '20' : 'var(--bg-elevated)',
-                        color: form.intensity === int.id ? int.color : 'var(--text-secondary)',
-                      }}>
-                      {int.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 12 }}>
-                <div className="form-group">
-                  <label>Duración (min) *</label>
-                  <input type="number" min="1" max="600" placeholder="ej: 45" required value={form.duration_min} onChange={e => setForm(f => ({ ...f, duration_min: e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label>Calorías quemadas</label>
-                  <input type="number" min="0" placeholder="opcional" value={form.calories_burned} onChange={e => setForm(f => ({ ...f, calories_burned: e.target.value }))} />
-                </div>
-                {showDistanceFields && (
-                  <div className="form-group">
-                    <label>Distancia (km)</label>
-                    <input type="number" step="0.01" min="0" placeholder="ej: 3.5" value={form.distance_km} onChange={e => setForm(f => ({ ...f, distance_km: e.target.value }))} />
-                  </div>
-                )}
-                {showStrengthFields && (
-                  <>
-                    <div className="form-group"><label>Series</label><input type="number" min="1" placeholder="ej: 3" value={form.sets} onChange={e => setForm(f => ({ ...f, sets: e.target.value }))} /></div>
-                    <div className="form-group"><label>Reps por serie</label><input type="number" min="1" placeholder="ej: 12" value={form.reps} onChange={e => setForm(f => ({ ...f, reps: e.target.value }))} /></div>
-                    <div className="form-group"><label>Peso usado (kg)</label><input type="number" step="0.5" min="0" placeholder="ej: 20" value={form.weight_used_kg} onChange={e => setForm(f => ({ ...f, weight_used_kg: e.target.value }))} /></div>
-                  </>
-                )}
-              </div>
-              <div className="form-group" style={{ marginBottom: 16 }}>
-                <label>Notas</label>
-                <input type="text" placeholder="Cómo te sentiste, circuito, etc." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-              </div>
-              <button type="submit" className="btn-primary">Guardar ejercicio</button>
-            </form>
-          </div>
-          {exercises.length > 0 && (
-            <div className="card" style={{ gridColumn: '1 / -1' }}>
-              <div className="card-title">🏅 Ejercicios de hoy</div>
-              {exercises.map(ex => {
-                const type = EXERCISE_TYPES.find(t => t.id === ex.exercise_type)
-                const intensity = INTENSITIES.find(i => i.id === ex.intensity)
-                return (
-                  <div key={ex.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--gray-100)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span className="emoji-bw" style={{ fontSize: '1.5rem' }}>{type?.icon || '🏅'}</span>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{type?.label || ex.exercise_type}</div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)' }}>
-                          ⏱️ {ex.duration_min} min{ex.distance_km ? ` · 📍 ${ex.distance_km} km` : ''}{ex.calories_burned ? ` · 🔥 ${ex.calories_burned} kcal` : ''}{ex.sets ? ` · ${ex.sets}×${ex.reps}` : ''}{ex.weight_used_kg ? ` · ${ex.weight_used_kg}kg` : ''}
-                        </div>
-                        {ex.notes && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', marginTop: 2 }}>{ex.notes}</div>}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="badge" style={{ background: intensity?.color + '20', color: intensity?.color }}>{intensity?.label}</span>
-                      <button className="btn-icon" onClick={() => deleteExercise(ex.id)}>🗑️</button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ═══════════════════════════════════════════════════════════
           TAB: Historial
