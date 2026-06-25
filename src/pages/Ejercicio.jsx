@@ -42,7 +42,6 @@ export default function Ejercicio() {
   // Hevy state
   const [hevyConfig, setHevyConfig] = useState(null)
   const [hevyWorkouts, setHevyWorkouts] = useState([])
-  const [hevyApiKeyInput, setHevyApiKeyInput] = useState('')
   const [hevySyncing, setHevySyncing] = useState(false)
   const [hevyMsg, setHevyMsg] = useState({ type: '', text: '' })
   const [hevyLoading, setHevyLoading] = useState(true)
@@ -115,32 +114,6 @@ export default function Ejercicio() {
       .select('*').eq('user_id', user.id)
       .order('start_time', { ascending: false }).limit(30)
     setHevyWorkouts(data || [])
-  }
-
-  async function saveHevyKey() {
-    const key = hevyApiKeyInput.trim()
-    if (!key) return
-    setHevySyncing(true)
-    setHevyMsg({ type: '', text: '' })
-    try {
-      const headers = await getHevyHeaders()
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-hevy`,
-        { method: 'POST', headers, body: JSON.stringify({ action: 'save_key', api_key: key }) }
-      )
-      const result = await resp.json()
-      if (!resp.ok) {
-        setHevyMsg({ type: 'error', text: result.error || 'Error al guardar la clave' })
-      } else {
-        setHevyApiKeyInput('')
-        setHevyMsg({ type: 'success', text: '✅ Hevy conectado. Sincronizando historial...' })
-        await loadHevyConfig()
-        await syncHevy(false)
-      }
-    } catch (err) {
-      setHevyMsg({ type: 'error', text: 'Error de conexión: ' + err.message })
-    }
-    setHevySyncing(false)
   }
 
   async function syncHevy(silent = false) {
@@ -381,54 +354,11 @@ export default function Ejercicio() {
             <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
           ) : !hevyConfig ? (
             /* ── Sin conectar ── */
-            <div>
-              <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid var(--primary)' }}>
-                <div className="card-title">🏋️ Conectar Hevy</div>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-600)', marginBottom: 16 }}>
-                  Sincronizá automáticamente tus entrenamientos de Hevy. Los datos se actualizan cada 5 minutos mientras usás la app.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginBottom: 20 }}>
-                  {[
-                    { n: '1', text: 'Suscribite a Hevy Pro en la app', icon: '💳' },
-                    { n: '2', text: 'Entrá a hevy.com/settings?developer', icon: '🌐' },
-                    { n: '3', text: 'Copiá tu API Key', icon: '🔑' },
-                    { n: '4', text: 'Pegala acá abajo y conectá', icon: '🔗' },
-                  ].map(s => (
-                    <div key={s.n} style={{ display: 'flex', gap: 10, padding: 12, background: 'var(--gray-50)', borderRadius: 'var(--radius-sm)' }}>
-                      <span style={{ background: 'var(--primary)', color: '#000', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.n}</span>
-                      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-700)' }}>{s.icon} {s.text}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <input
-                    type="password"
-                    placeholder="Pegá tu Hevy API Key aquí"
-                    value={hevyApiKeyInput}
-                    onChange={e => setHevyApiKeyInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && saveHevyKey()}
-                    style={{ flex: 1, padding: '10px 14px', border: '1.5px solid var(--gray-300)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)' }}
-                  />
-                  <button
-                    className="btn-primary"
-                    onClick={saveHevyKey}
-                    disabled={hevySyncing || !hevyApiKeyInput.trim()}
-                    style={{ whiteSpace: 'nowrap' }}
-                  >
-                    {hevySyncing ? '⏳ Conectando...' : '🔗 Conectar'}
-                  </button>
-                </div>
-                {hevyMsg.text && (
-                  <div className={hevyMsg.type === 'error' ? 'form-error' : 'form-success'} style={{ marginTop: 12 }}>
-                    {hevyMsg.text}
-                  </div>
-                )}
-                <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--primary-light)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-gold)' }}>
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--secondary)' }}>
-                    🔒 Tu API key se guarda de forma segura en tu base de datos privada con Row Level Security
-                  </span>
-                </div>
-              </div>
+            <div className="empty-state">
+              <div className="empty-state-icon">🏋️</div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
+                Hevy no está conectado aún. Contactá al administrador para activar la integración.
+              </p>
             </div>
           ) : (
             /* ── Conectado ── */
@@ -613,7 +543,7 @@ export default function Ejercicio() {
             {importMsg && <div className={importMsg.startsWith('❌') ? 'form-error' : 'form-success'} style={{ marginBottom: 12 }}>{importMsg}</div>}
             {importStatus === 'parsed' && importWorkouts.length > 0 && (
               <div>
-                <div style={{ fontWeight: 600, marginBottom: 12 }}>Vista previa — {importWorkouts.length} entrenamientos:</div>
+                <div style=t{ fontWeight: 600, marginBottom: 12 }}>Vista previa — {importWorkouts.length} entrenamientos:</div>
                 <div style={{ maxHeight: 320, overflowY: 'auto', marginBottom: 16 }}>
                   <table className="data-table">
                     <thead><tr><th>Fecha</th><th>Ejercicio</th><th>Duración</th><th>Distancia</th><th>Calorías</th></tr></thead>
